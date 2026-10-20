@@ -1,0 +1,2 @@
+order,run_uid,engine,scenario,controller,rep,cooldown_s,spec,scn,seed
+1,mongodb_burst_FF_obs_rep16,mongodb,burst,FF_obs,16,30,"{""antiwindup"": ""clamp"", ""bias_alpha"": 1.0, ""ff"": true, ""ff_alpha"": 1.0, ""filter_alpha"": 1.0, ""ki"": 0.0, ""kp"": 0.0, ""type"": ""pi""}","{""burst"": true, ""burst_dur"": 60.0, ""burst_start"": 100.0, ""name"": ""burst"", ""tps0"": 400.0, ""tps1"": 1600.0}",116321858

@@ -1,0 +1,60 @@
+name: Second-platform replication (burst scenario, 4 key controllers)
+# Runs the burst scenario on a free GitHub-hosted Linux runner (no WSL2, MongoDB in plain Docker).
+# Launch it by hand: Actions tab -> "Second-platform replication" -> Run workflow.
+# First test with smoke=true (1 repetition, ~25 min), then run the full 6 repetitions (~2.5 h).
+on:
+  workflow_dispatch:
+    inputs:
+      reps:
+        description: "repetitions per controller"
+        default: "6"
+      smoke:
+        description: "smoke test: 1 repetition only"
+        default: "false"
+jobs:
+  replicate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements.txt pymongo
+      - name: Self-tests
+        run: python tests/selftest.py
+      - name: Record the environment
+        run: |
+          mkdir -p analysis_ci
+          { uname -a; lscpu | head -20; free -m; df -h /; docker --version; } > analysis_ci/environment.txt
+      - name: Start MongoDB (plain Docker)
+        run: |
+          docker run -d --name mongo -p 27017:27017 \
+            -e MONGO_INITDB_ROOT_USERNAME=bench -e MONGO_INITDB_ROOT_PASSWORD=ci-throwaway \
+            mongo:8.0 --wiredTigerCacheSizeGB 1
+          for i in $(seq 1 60); do docker exec mongo mongosh --quiet --eval 'db.runCommand({ping:1}).ok' && break; sleep 2; done
+          docker exec mongo mongosh --quiet -u bench -p ci-throwaway --authenticationDatabase admin --eval 'db.version()' | tee analysis_ci/mongo_version.txt
+      - name: Build the schedule
+        run: |
+          REPS="${{ inputs.reps }}"
+          if [ "${{ inputs.smoke }}" = "true" ]; then REPS=1; fi
+          python experiments/make_replication.py --specs tuned_specs.json --reps "$REPS" --out schedule_ci.csv
+      - name: Run the schedule
+        env:
+          MONGO_URI: mongodb://localhost:27017
+          MONGO_USER: bench
+          MONGO_PASSWORD: ci-throwaway
+          MPCRPO_DOCKER_CONTAINER: mongo
+        run: python experiments/run_schedule.py --schedule schedule_ci.csv --out data/raw_ci --adapter mongo
+      - name: Analyse
+        if: always()
+        run: python experiments/analyze_runs.py --raw data/raw_ci --out analysis_ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: replication-ci
+          path: |
+            data/raw_ci
+            analysis_ci
+            schedule_ci.csv

@@ -1,0 +1,415 @@
+\documentclass[twocolumn]{svjour3}
+\smartqed
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{url}
+\input{numbers.tex}
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
+\journalname{Draft}
+
+\begin{document}
+
+\title{Load Feedforward, Not Prediction: An Empirical Comparison of PI and
+Model Predictive Control of the MongoDB Journal Commit Interval under Load Bursts}
+\titlerunning{Load Feedforward, Not Prediction}
+
+\author{Imane Jerrari \and Ismail Assayad}
+
+\institute{
+  I.~Jerrari \at
+  Laboratory of Information Systems (LIS), Faculty of Sciences Ain
+  Chock, Hassan II University of Casablanca, Morocco \\
+  \email{imane.jerrari-etu@etu.univh2c.ma}
+  \and
+  I.~Assayad \at
+  ENSEM, Hassan II University of Casablanca, Morocco \\
+  \email{i.assayad@ensem.ac.ma}
+}
+
+\date{Received: date / Accepted: date}
+\maketitle
+
+\begin{abstract}
+Database engines expose a write-behind setting, the journal commit interval,
+that trades durability against write cost, yet it is almost always fixed at
+deployment. We ask whether a feedback or predictive controller can keep the
+volume of journal data not yet synchronised to disk near a target when the
+write load bursts, and whether predicting the load helps. On MongoDB we derive
+the controlled variable from engine counters alone, identify the plant (a
+static law $V\approx R\,(J+pL)/p$, a 10\,s measurement window, a 5\,ms
+actuator) and compare seven controllers in a pre-specified, interleaved,
+randomised design with 135 valid runs on a real cluster (81 more for a sensitivity analysis), tuned with an equal
+budget. A tuned PI controller using feedback only has a burst error of
+\MaePITS\,\% against \MaePIFFS--\MaeMPCMS\,\% for every controller that uses the
+observed load. A model predictive controller with persistence forecasting is
+equivalent to a plain load feedforward with a model-bias observer on both primary criteria
+(burst error and exposure peak); a moving-average forecaster is worse and an ARIMA forecaster
+brings no gain. Adding PI feedback to the feedforward lowers the mean burst error slightly but doubles
+the actuator movement and slows recovery under saturation. The conclusions are limited to one engine, one
+deployment and one platform, and the signal measures exposure, not observed data loss.
+The sensitivity analysis shows that the responsiveness of the load estimate is the parameter that matters, and that a 50\,\% higher gain makes PI with feedforward oscillate whereas the feedforward with observer and MPC stay stable over every perturbation tested.
+\keywords{Model predictive control \and PI control \and Feedforward \and MongoDB \and
+Write-behind \and Recovery point objective \and Journal commit interval}
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+Stateful workloads on container platforms must meet data-protection
+commitments, usually expressed as a Recovery Point Objective (RPO), the
+maximum tolerable window of data loss, inside a Service Level Agreement (SLA).
+Database engines trade this window against write cost through a write-behind
+setting: in MongoDB, the WiredTiger journal is flushed every
+\texttt{journalCommitInterval} milliseconds. The setting is static in
+operators and deployment manifests, so a load burst changes the amount of data
+exposed between two synchronisations without any reaction.
+
+A feedback controller needs a measurable signal and a model of how the
+actuator moves it. Predictive control is attractive because it can
+anticipate disturbances~\cite{camacho2013model}, but its benefit over a
+well-designed classical controller is often assumed rather than measured. This
+paper measures it on a real cluster, for one engine and one knob, and takes care
+that the comparison is fair: the signal is derived from engine counters only,
+the plant is identified before any controller is designed, every controller
+family receives the same tuning budget, runs are interleaved and randomised, the
+analysis is fixed before the data are seen, and a claim of ``no difference'' is
+supported by an equivalence test rather than by a non-significant difference test.
+
+\paragraph{Contributions.}
+(1) A controlled variable, the journal volume exposed per synchronisation cycle,
+computed from two WiredTiger counters, with an identified plant: static law,
+sensor window and actuator latency (Section~\ref{sec:plant}).
+(2) A fair comparison design with seven controllers, including the minimal
+baseline that matters most: load feedforward with a model-bias observer and neither
+feedback nor prediction (Sections~\ref{sec:controllers}--\ref{sec:protocol}).
+(3) Results on 135 valid real-cluster runs and a sensitivity analysis of 81 more: load information, not prediction or
+optimisation, explains the gain over a feedback-only PI controller
+(Section~\ref{sec:results}).
+(4) An explicit account of what the study does not establish
+(Section~\ref{sec:limits}).
+
+\paragraph{Scope.}
+One engine (MongoDB 8.0.32, single pod), one host (Kind on WSL2), one knob. The
+results do not transfer to other engines without new identification, and no
+crash-recovery experiment was run: the signal measures exposure of journal
+data, not observed data loss.
+
+\section{Related work}\label{sec:related}
+Look-ahead and model predictive control have been applied to power and
+performance management of virtualised environments~\cite{kusic2009lookahead,padala2009automated,fang2016qos}.
+Discrete-time and PID controllers have been proposed for containerised
+applications and autoscaling~\cite{baresi2016discrete,sabuhi2021adaptive,cai2022inverse,pozdniakova2024sla},
+with stability concerns for the Kubernetes autoscaler loop~\cite{serracanta2025stability}.
+Forecasting-based provisioning combines a predictor with the resource
+decision~\cite{roy2011autoscaling,gong2010press,joshi2024arimapid}. Learning-based
+configuration tuning for databases targets aggregate throughput or latency~\cite{vanaken2017ottertune,zhang2019cdbtune,ferreira2020selftunable}
+rather than a bound on exposed data. Offset-free MPC uses a disturbance model to remove
+steady-state error~\cite{muske2002disturbance,pannocchia2003disturbance}; the bias
+observer used below plays that role. Integrator windup and its remedies are classical~\cite{astrom1989windup,kothare1994antiwindup}.
+We are not aware of a measured comparison of predictive and feedforward control of a database durability setting
+on a real cluster with an equal tuning budget.
+
+\section{Controlled variable and plant}\label{sec:plant}
+\subsection{Signal}
+MongoDB exposes cumulative counters of its WiredTiger journal in
+\texttt{serverStatus}: bytes written, flush operations and sync operations. We define the
+exposed volume over a window of $W=10$\,s (20 control ticks of 0.5\,s) as
+\begin{equation}
+V=\frac{\Delta(\text{log bytes written})}{\Delta(\text{log sync operations})},
+\end{equation}
+the average volume of journal data written between two synchronisations. The
+signal is computed from counters only; it never reads the commanded interval $J$. It is a composite of two counters,
+not a direct measurement of data loss. The actuator is $J$, set with
+\texttt{setParameter}; the disturbance is the byte rate $R$.
+
+\subsection{Identification}
+\paragraph{Static law.}
+With a controller disconnected, we imposed $J\in\{20,100,500\}$\,ms at 100, 400 and 1600 documents/s
+(60\,s per cell). Outside a floor set by one write batch ($b_0\approx 513$\,B), the data follow
+\begin{equation}
+V \approx \frac{R\,(J+pL_0)}{p},\quad p=\min\!\left(1,\frac{RJ}{b_0}\right),
+\end{equation}
+where $p$ is the fraction of flushes that trigger a sync and $L_0\approx 7$\,ms the mean sync
+latency. A log-linear fit on the six points above the floor gives $\ln V=-6.68+1.001\ln R+0.959\ln J$
+(maximum error 1.4\,\%). In logarithms the actuator acts additively with a gain close to one and the
+load is an additive disturbance, which justifies the additive model used by the controllers.
+Table~\ref{tab:plant} and Fig.~\ref{fig:plant} compare the model with the measurements
+(median error \plantMedErr\,\%, maximum \plantMaxErr\,\%).
+
+\begin{figure}[t]\centering
+\includegraphics[width=\columnwidth]{figures/fig_plant.pdf}
+\caption{Static plant: measured exposed volume versus $J$ at three loads, with the model (grey).}\label{fig:plant}
+\end{figure}
+\input{tab_plant.tex}
+
+\paragraph{Dynamics.}
+A load step from 400 to 1600 documents/s with $J$ fixed multiplied $V$ by 4.05 (at $J=100$\,ms) and 4.00
+($J=200$\,ms) for a load ratio of 3.98. The 10\,s window makes the sensor the dominant dynamics: $V$ reaches 63\,\%
+of its final value after 6.5--7\,s and 95\,\% after 10\,s, as expected for a moving average, whereas the
+byte rate $R$ estimated tick by tick reaches 90\,\% after 2\,s. The actuator (\texttt{setParameter} plus read-back)
+takes $4.9$\,ms on average (maximum 6.4\,ms), far below the 0.5\,s control period.
+
+\paragraph{Measurement noise.}
+The window average is noisy mainly because of counting: at $J=500$\,ms a 10\,s window contains about 20 syncs and one sync more or less changes $V$ by 5\,\%. The relative standard deviation of $V$
+is \vcvMinFiveHundred--\vcvMaxFiveHundred\,\% at $J=500$\,ms, \vcvMinHundred--\vcvMaxHundred\,\% at 100\,ms and \vcvMinTwenty--\vcvMaxTwenty\,\% at 20\,ms (Table~\ref{tab:noise}). The per-tick
+byte rate, used as load estimate, has a relative standard deviation of \rcvBaseMin--\rcvBaseMax\,\% at 400 documents/s and \rcvBurstMin--\rcvBurstMax\,\% at 1600, with a lag-one autocorrelation of
+\racfBaseMin\ to \racfBaseMax\ (base) and \racfBurstMin\ to \racfBurstMax\ (burst): close to white, slightly negative because of tick-boundary counting. The noise is therefore a quantisation effect, not a drifting error,
+and the steady-state error floor of 1.2--1.5\,\% seen in closed loop is of the same order.
+\input{tab_noise.tex}
+
+\section{Controllers and tuning}\label{sec:controllers}
+All controllers work on $e=\ln V^*-\ln\hat V$ and command $J\in[20,500]$\,ms every 0.5\,s.
+\paragraph{PI.} $u=u_0+K_p e+K_i\sigma$ with integrator $\sigma$, clamp or back-calculation anti-windup, and optional filtering of $\ln\hat V$.
+\paragraph{Feedforward with observer (FF+obs).}
+With $\hat R$ the smoothed per-tick byte rate, $J_\mathrm{ff}=V^*e^{-b}/\hat R-L_0$, where the bias
+$b$ is an exponential average of $\ln V_{\rm measured}-\ln V_{\rm model}$ computed over the same 10\,s window; it
+absorbs model error (floor, $p$, $L_0$) and compensates the sensor window. There is no feedback gain and no prediction.
+\paragraph{PI with feedforward (PI-FF).} The same feedforward plus the PI correction; the tuner selected no bias observer for this family ($\text{bias}\_\alpha=0$) and unsmoothed load input.
+\paragraph{MPC.} At each tick, $u=\ln J$ minimises $\sum_{i=1}^{H}\gamma^{i-1}s(e_i)e_i^2+\lambda(u-u_{\rm prev})^2$ with
+$e_i=\ln V^*-[\ln v(\hat R_{k+i},e^{u})+b]$, $v$ the static law and $s=w$ when $V$ is below the target and 1 otherwise. $\hat R_{k+i}$ is
+forecast by persistence (exponentially smoothed level), moving average (level plus least-squares slope) or ARIMA(1,1,0) fitted by least squares on the
+window. The scalar problem is solved by grid search and golden-section refinement: with an additive linear model the cost is convex and a line search suffices, but with the static law $v$ convexity is not guaranteed, hence the continuous refinement of a dense grid. With a flat forecast, $H$ and $\lambda$ are redundant
+($H e^2+\lambda\Delta^2 \equiv e^2+(\lambda/H)\Delta^2$) and MPC with $H=1$ reduces to FF+obs (checked numerically).
+
+\paragraph{Tuning protocol.}
+Each family (PI, PI-FF, FF+obs, and each MPC predictor) received the same budget of 60 random candidates, evaluated on a
+calibrated simulator with a robust objective (half nominal plant, half stress plant with slower sync, more jitter and one tick of actuator delay),
+on tuning seeds disjoint from test seeds. The three MPC predictors share the same candidates. Search ranges were widened after a first run placed continuous optima on an edge; the edge values that remain are the ``no filtering'' options (value 1) and extremes of discrete sets, listed with the tuned specifications in the repository. A first tuning gave the MPC an apparent advantage over PI-FF, traced to a different smoothing of the load estimate;
+all controllers now receive the same raw inputs and tune their own smoothing. A PI with default gains is kept as a naive reference only. Table~\ref{tab:params} lists every parameter used.
+\input{tab_params.tex}
+
+\section{Experimental protocol}\label{sec:protocol}
+\paragraph{Platform and workload.}
+A Kind cluster (Kubernetes v1.27.3, one control plane and three workers) on a single Windows host under WSL2 (6\,GB), MongoDB 8.0.32 in a single
+authenticated pod, other database workloads stopped. The generator inserts batches of 10 documents with four threads at a regulated rate,
+write concern $w=1$, $j=\text{false}$. Target $V^*=4096$\,B.
+\paragraph{Scenarios.} Stationary (400 documents/s); burst (400$\to$1600 documents/s from $t=100$ to 160\,s); low load (100$\to$400 documents/s, where $V^*$ is
+unreachable at the start because $J$ would exceed 500\,ms). Runs last 300\,s with a 20\,s warm-up.
+\paragraph{Design.} Controllers are run in randomised blocks (interleaved in time), 30\,s apart. A run is invalid and repeated if a pod restarts,
+the acknowledged rate falls below 95\,\% of the offered rate, or insertions fail. A pilot of 63 runs (3 per cell) preceded a campaign of 71 runs; the pilot
+used the same specifications and is pooled. Cell sizes were set after the pilot from its variability (amendment recorded before the campaign).
+\paragraph{Pre-specified analysis.}
+Primary criteria on the burst scenario: mean error during the burst and exposure peak (maximum over 2\,s windows, relative to $V^*$).
+Seven contrasts, Mann--Whitney tests with Holm correction over 14 tests, Cliff's $\delta$ and bootstrap CIs; equivalence (TOST on Welch 90\,\% CI)
+for the pairs where the claim is ``no difference'', with margins of 0.7 percentage points (burst error) and 0.10 (peak). Margins are about
+half the steady-state noise floor.
+
+\section{Results}\label{sec:results}
+\paragraph{Data.}
+135 main runs (pilot 63, campaign 71, one replacement run), all valid, plus 81 sensitivity runs, all valid; no pod restarted during any run, acknowledged/offered rate between 0.964 and 1.002. The pod was recreated once between the pilot and the campaign and restarted once between two sessions of the sensitivity campaign (13 runs before, 69 after; the concurrent nominal controls were run after).
+\paragraph{Primary criteria.}
+Table~\ref{tab:main} and Fig.~\ref{fig:burst}--\ref{fig:primary} summarise the burst scenario. The tuned PI has a burst error of \MaePITS\,\%\ (sd \MaeSdPITS) and a
+peak of \PeakPITS$\times V^*$, against \MaePIFFS\,\% (PI-FF), \MaeFFOS\,\% (FF+obs) and \MaeMPCPS\,\% (MPC with persistence), with peaks of \PeakPIFFS, \PeakFFOS\ and
+\PeakMPCPS. The PI-versus-PI-FF difference is $+$\cDMaePITPIFFS\ pp (95\,\% CI [\cLoMaePITPIFFS, \cHiMaePITPIFFS], $p_{\rm Holm}=\,$$\cPHMaePITPIFFS$).
+
+\begin{figure}[t]\centering
+\includegraphics[width=\columnwidth]{figures/fig_burst.pdf}
+\caption{Burst scenario, median over valid runs (shaded: burst). Top: $V$ over a 10\,s window relative to the target. Bottom: commanded $J$.}\label{fig:burst}
+\end{figure}
+\begin{figure*}[t]\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_primary.pdf}
+\caption{Primary criteria per controller (boxes: quartiles; points: outliers).}\label{fig:primary}
+\end{figure*}
+\input{tab_main.tex}
+\input{tab_contrasts.tex}
+
+\paragraph{MPC versus feedforward with observer.}
+FF+obs versus MPC with persistence: $+$\cDMaeFFOMPCPS\ pp [\cLoMaeFFOMPCPS, \cHiMaeFFOMPCPS] on the burst error ($p_{\rm Holm}=\,$$\cPHMaeFFOMPCPS$) and
+\cDPeakFFOMPCPS\ on the peak. The equivalence tests (Table~\ref{tab:equiv}) conclude to equivalence on both criteria once the stalled run (below) is set aside, and are
+inconclusive with it (one extreme value widens the CI), while the rank tests do not change.
+MPC with a moving average has a burst error larger than persistence by \cAMaeMPCPMPCMS\ pp, and ARIMA is equivalent to persistence on the burst error;
+neither forecaster improves on persistence.
+\input{tab_equiv.tex}
+
+\paragraph{PI with feedforward.}
+PI-FF has the lowest burst error, \cAMaePIFFMPCPS\ pp below MPC (Table~\ref{tab:contrasts}), with no difference on the exposure peak. It also moves $J$ about twice as much
+(\ChatPIFFS\ against \ChatMPCPS\ in $|\Delta\ln J|$ per tick) and, when the target is unreachable and the actuator saturates (low-load scenario), recovers in \LowRecPIFFS\,s against \LowRecMPCPS\,s
+for MPC (Table~\ref{tab:other}).
+\input{tab_other.tex}
+
+\paragraph{A journal-sync stall.}
+One run (FF+obs, first run after the pod was recreated) shows no journal sync for 12.5\,s during the burst, then 1.5\,s and 1\,s; its burst error is 171\,\% and its peak $39\times V^*$. It is valid under the
+pre-specified rules and is included in the primary analysis; the sensitivity analysis excludes runs with a sync gap of 5\,s or more (a rule defined from the counters, post hoc). The cause is unknown; four
+shorter gaps (1--1.5\,s) occur in two other runs. Counters of journal pre-allocation are now recorded to investigate such events.
+
+\paragraph{Simulator versus real cluster.}
+The simulator was calibrated on the static grid (worst error 3.9\,\% on $V$) and on the burst response. On the pilot the ranking of the seven controllers by burst error is identical to the simulated
+one (Spearman 1.00), with real-to-simulated ratios between 0.80 and 1.09. The simulator underestimates the steady-state measurement noise (real error 1.2--1.5\,\% versus 0.5--0.95\,\%) and the between-run variability,
+so it was used for tuning and design only.
+
+\subsection{Sensitivity to parameters and to the target}
+The criteria below were fixed before the runs (amendment 2). Each continuous parameter of PI, PI-FF, FF+obs and MPC (persistence) was perturbed one at a time by $\times0.5$ and $\times1.5$ (clipped to valid values), 3 runs per variant, with 3 concurrent nominal runs per controller
+(Table~\ref{tab:sens}); the target was also changed (Table~\ref{tab:vstar}). The analysis is descriptive ($n=3$): ranges and ratios, no tests.
+\paragraph{C1, parameter robustness.}
+Worst ratio of burst error to the concurrent nominal: PI \SensWorstPIT, FF+obs \SensWorstFFO, MPC \SensWorstMPCP, PI-FF \SensWorstPIFF. For FF+obs, MPC and PI-FF the large ratios come from one parameter, the smoothing of the load estimate:
+halving its factor multiplies the burst error by \SensSmoothFFO\ (FF+obs), \SensSmoothMPCP\ (MPC) and \SensSmoothPIFF\ (PI-FF). The MPC weights ($\lambda$, $w$) and the observer factor change the error by $-10$ to $+16$\,\%.
+PI-FF is the only controller that loses stability: with $K_p\times1.5$ ($K_p=5.5$) it oscillates, with a burst error of \SensPIFFkpErr\,\% and a peak of \SensPIFFkpPeak$\times V^*$.
+\paragraph{C2, robustness of the ranking.}
+On the burst error the worst load-aware variant (\SensWorstAwareErr\,\%) is below the best PI variant (\SensBestPIErr\,\%): the ranking survives. On the exposure peak it survives for FF+obs (largest peak \SensMaxPeakFFO) and for MPC (\SensMaxPeakMPCP)
+against the best PI variant (\SensMinPeakPIT) but not for PI-FF (\SensPIFFkpPeak). As specified, over the union of the three load-aware families, C2 is therefore \emph{not} satisfied on the peak; we report it as such.
+\paragraph{C3, target.}
+Journal syncs per second follow $1/V^*$ (about 17, 8.6 and 4.3 per second for $V^*=2048$, 4096 and 8192\,B, Table~\ref{tab:vstar}), the cost of a tighter target. No controller is uniformly best across targets;
+at the unreachable $V^*=2048$\,B the MPC has a larger error than FF+obs.
+\input{tab_sens.tex}
+\input{tab_vstar.tex}
+
+\section{Discussion}\label{sec:discussion}
+\paragraph{Why prediction does not help here.}
+The actuator acts on $V$ within one control tick, while the sensor is delayed by the 10\,s window. A controller that knows $\hat R$ and the static law can therefore set $J$ almost
+exactly; what remains is to correct the sensor lag and model error, which the bias observer does. Forecasting $R$ several ticks ahead adds noise, not information, because the plant has no
+delay to compensate: with a moving average the burst error is worse. This is consistent with the equivalence of MPC and FF+obs.
+\paragraph{Why feedback alone fails.}
+Feedback on the windowed $V$ reacts only as the window fills. Even with a high proportional gain ($K_p=3.2$, $K_i=0.35$ after tuning) the PI shows a
+burst error five to eight times larger than PI-FF, FF+obs and MPC with persistence, and a peak 1.4 times higher (Fig.~\ref{fig:burst}); its response oscillates around the target.
+\paragraph{What matters.}
+The controller structure matters less than the responsiveness of the load estimate: smoothing it more than the plant requires doubles the burst error for every load-aware controller (Table~\ref{tab:sens}), while the MPC weights and the observer factor are second order.
+\paragraph{Practical guidance.}
+On this engine and knob, a load feedforward with a model-bias observer is the simplest controller that attains the accuracy of MPC and it was stable over every perturbation tested. PI with feedforward has the lowest nominal burst error but the least margin: a 50\,\% higher gain made it oscillate,
+and it moves the actuator twice as much and recovers more slowly under saturation. We therefore see feedback as optional: useful only with a gain margin that is measured, not assumed.
+
+\section{Limitations}\label{sec:limits}
+(i) One engine, one single-pod deployment and one Kind host under WSL2; (ii) $V$ is a composite of two counters and no crash-recovery experiment verifies it as data loss;
+(iii) the simulator underestimates noise and between-run variability; (iv) tuning was done on the simulator and checked on a pilot; (v) one run contains a long journal-sync stall of unknown cause;
+(vi) the simulator reproduces the nominal behaviour but not the fragility of PI-FF near its stability limit (a 50\,\% higher gain does not oscillate in simulation unless one extra tick of delay is added, which reproduces it qualitatively), so unmodelled delay is a plausible but unverified cause; (vii) the pod restarted once between two sessions of the sensitivity campaign (each run individually valid); (viii) equivalence margins are set from the noise floor and a different margin could change an ``inconclusive'' into ``equivalent'' or the reverse; (ix) the sensitivity analysis is descriptive ($n=3$ per variant) and one-at-a-time, so interactions between parameters are not explored.
+
+\section{Conclusion}\label{sec:conclusion}
+On a real MongoDB cluster, using the observed write load is what lets a controller hold the exposed journal volume near its target during bursts. A model predictive controller with persistence forecasting is equivalent to a plain
+feedforward with a model-bias observer, and forecasting the load with a moving average or ARIMA does not help. The advantage of the feedforward does not depend on a precise tuning, except for the responsiveness of the load estimate, and a feedback term must be added with a measured gain margin. These conclusions are limited to the scenarios, engine and platform tested.
+
+\begin{acknowledgements}
+\todo{acknowledgements, if any}
+\end{acknowledgements}
+
+\section*{Declarations}
+\textbf{Funding.} No funding was received. \textbf{Competing interests.} The authors declare no competing interests.
+\textbf{Data and code availability.} \todo{insert the public repository URL after publishing the code (mpcrpo), the 134+ run files, the schedules and the analysis scripts; the earlier repository does not contain them}.
+\textbf{Use of AI tools.} \todo{describe, as required by the target journal, any use of AI assistance in code, analysis or writing}.
+
+\begin{thebibliography}{9}
+\bibitem{camacho2013model}
+E.\ F.\ Camacho and C.\ Bordons.
+\newblock \emph{Model Predictive Control}.
+\newblock Advanced Textbooks in Control and Signal Processing.
+  Springer-Verlag London, 2nd edition, 2007.
+
+\bibitem{muske2002disturbance}
+K.\ R.\ Muske and T.\ A.\ Badgwell.
+\newblock Disturbance modeling for offset-free linear model predictive
+  control.
+\newblock \emph{Journal of Process Control}, 12(5):617--632, 2002.
+
+\bibitem{pannocchia2003disturbance}
+G.\ Pannocchia and J.\ B.\ Rawlings.
+\newblock Disturbance models for offset-free model-predictive control.
+\newblock \emph{AIChE Journal}, 49(2):426--437, 2003.
+
+\bibitem{kothare1994antiwindup}
+M.\ V.\ Kothare, P.\ J.\ Campo, M.\ Morari, and C.\ N.\ Nett.
+\newblock A unified framework for the study of anti-windup designs.
+\newblock \emph{Automatica}, 30(12):1869--1883, 1994.
+
+\bibitem{astrom1989windup}
+K.\ J.\ {\AA}str\"om and L.\ Rundqwist.
+\newblock Integrator windup and how to avoid it.
+\newblock In \emph{Proceedings of the 1989 American Control
+  Conference}, pp.\ 1693--1698. IEEE, 1989.
+
+\bibitem{roy2011autoscaling}
+N.\ Roy, A.\ Dubey, and A.\ Gokhale.
+\newblock Efficient autoscaling in the cloud using predictive models
+  for workload forecasting.
+\newblock In \emph{Proceedings of the IEEE 4th International
+  Conference on Cloud Computing (CLOUD'11)}, pp.\ 500--507, 2011.
+
+\bibitem{gong2010press}
+Z.\ Gong, X.\ Gu, and J.\ Wilkes.
+\newblock PRESS: PRedictive Elastic ReSource Scaling for cloud
+  systems.
+\newblock In \emph{Proceedings of the International Conference on
+  Network and Service Management (CNSM)}, pp.\ 9--16, 2010.
+
+\bibitem{cai2022inverse}
+Z.\ Cai and R.\ Buyya.
+\newblock Inverse queuing model-based feedback control for elastic
+  container provisioning of web systems in Kubernetes.
+\newblock \emph{IEEE Transactions on Computers}, 71(2):337--348, 2022.
+
+\bibitem{pozdniakova2024sla}
+O.\ Pozdniakova, D.\ Ma\v{z}eika, and A.\ Cholomskis.
+\newblock SLA-adaptive threshold adjustment for a Kubernetes
+  horizontal pod autoscaler.
+\newblock \emph{Electronics}, 13(7):1242, 2024.
+
+\bibitem{serracanta2025stability}
+B.\ Serracanta, A.\ Luk\'acs, A.\ Rodriguez-Natal, A.\ Cabellos, and
+  G.\ R\'etv\'ari.
+\newblock On the stability of the Kubernetes horizontal autoscaler
+  control loop.
+\newblock \emph{IEEE Access}, 13:7160--7166, 2025.
+
+\bibitem{baresi2016discrete}
+L.\ Baresi, S.\ Guinea, A.\ Leva, and G.\ Quattrocchi.
+\newblock A discrete-time feedback controller for containerized cloud
+  applications.
+\newblock In \emph{Proceedings of the 24th ACM SIGSOFT International
+  Symposium on Foundations of Software Engineering (FSE 2016)}, pp.\
+  217--228, 2016.
+
+\bibitem{sabuhi2021adaptive}
+M.\ Sabuhi, N.\ Mahmoudi, and H.\ Khazaei.
+\newblock Optimizing the performance of containerized cloud software
+  systems using adaptive PID controllers.
+\newblock \emph{ACM Transactions on Autonomous and Adaptive Systems},
+  15(3), 2021.
+
+\bibitem{vanaken2017ottertune}
+D.\ Van Aken, A.\ Pavlo, G.\ J.\ Gordon, and B.\ Zhang.
+\newblock Automatic database management system tuning through
+  large-scale machine learning.
+\newblock In \emph{Proceedings of the 2017 ACM International
+  Conference on Management of Data (SIGMOD'17)}, pp.\ 1009--1024, 2017.
+
+\bibitem{zhang2019cdbtune}
+J.\ Zhang, Y.\ Liu, K.\ Zhou, G.\ Li, Z.\ Xiao, B.\ Cheng, J.\ Xing,
+  Y.\ Wang, T.\ Cheng, L.\ Liu, M.\ Ran, and Z.\ Li.
+\newblock An end-to-end automatic cloud database tuning system using
+  deep reinforcement learning.
+\newblock In \emph{Proceedings of the 2019 ACM International
+  Conference on Management of Data (SIGMOD'19)}, pp.\ 415--432, 2019.
+
+\bibitem{ferreira2020selftunable}
+L.\ Ferreira, F.\ Coelho, and J.\ Pereira.
+\newblock Self-tunable DBMS replication with reinforcement learning.
+\newblock In \emph{Distributed Applications and Interoperable Systems
+  (DAIS 2020)}, LNCS vol.\ 12135, pp.\ 131--147. Springer, 2020.
+
+\bibitem{joshi2024arimapid}
+N.\ S.\ Joshi, R.\ Raghuwanshi, Y.\ M.\ Agarwal, B.\ Annappa, and
+  D.\ N.\ Sachin.
+\newblock ARIMA-PID: container auto scaling based on predictive
+  analysis and control theory.
+\newblock \emph{Multimedia Tools and Applications}, 83(9):26369--26386,
+  2024.
+
+\bibitem{kusic2009lookahead}
+D.\ Kusic, J.\ O.\ Kephart, J.\ E.\ Hanson, N.\ Kandasamy, and G.\ Jiang.
+\newblock Power and performance management of virtualized computing
+  environments via lookahead control.
+\newblock \emph{Cluster Computing}, 12(1):1--15, 2009.
+
+\bibitem{padala2009automated}
+P.\ Padala, K.-Y.\ Hou, K.\ G.\ Shin, X.\ Zhu, M.\ Uysal, Z.\ Wang,
+  S.\ Singhal, and A.\ Merchant.
+\newblock Automated control of multiple virtualized resources.
+\newblock In \emph{Proceedings of the 4th ACM European Conference on
+  Computer Systems (EuroSys'09)}, pp.\ 13--26, 2009.
+
+\bibitem{fang2016qos}
+Q.\ Fang, J.\ Wang, and Q.\ Gong.
+\newblock QoS-driven power management of data centers via model
+  predictive control.
+\newblock \emph{IEEE Transactions on Automation Science and
+  Engineering}, 13(4):1557--1566, 2016.
+\end{thebibliography}
+\end{document}

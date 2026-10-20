@@ -1,0 +1,296 @@
+{
+ "budget": 60,
+ "tune_seeds": [
+  1000,
+  1001,
+  1002
+ ],
+ "plant": "simulated (calibrated on steps 2 and 3b)",
+ "specs": {
+  "PI": {
+   "type": "pi",
+   "kp": 3.1893705957434313,
+   "ki": 0.34596331349062115,
+   "antiwindup": "backcalc",
+   "filter_alpha": 1.0
+  },
+  "PI_FF": {
+   "type": "pi",
+   "kp": 3.6629893612448283,
+   "ki": 0.1911045135733595,
+   "antiwindup": "backcalc",
+   "filter_alpha": 1.0,
+   "ff": true,
+   "bias_alpha": 0.0,
+   "ff_alpha": 1.0
+  },
+  "FF_obs": {
+   "type": "pi",
+   "ff": true,
+   "kp": 0.0,
+   "ki": 0.0,
+   "antiwindup": "clamp",
+   "filter_alpha": 1.0,
+   "bias_alpha": 1.0,
+   "ff_alpha": 1.0
+  },
+  "MPC_persist": {
+   "type": "mpc",
+   "predictor": "persistence",
+   "horizon": 10,
+   "gamma": 0.85,
+   "lam": 0.020452743416045135,
+   "under_weight": 0.6221272175606445,
+   "ewma_alpha": 1.0,
+   "bias_alpha": 1.0,
+   "window": 30
+  },
+  "MPC_ma": {
+   "type": "mpc",
+   "predictor": "ma",
+   "horizon": 3,
+   "gamma": 0.7,
+   "lam": 0.023751815247116215,
+   "under_weight": 0.855876647861307,
+   "ewma_alpha": 0.3,
+   "bias_alpha": 1.0,
+   "window": 5
+  },
+  "MPC_arima": {
+   "type": "mpc",
+   "predictor": "arima",
+   "horizon": 3,
+   "gamma": 0.7,
+   "lam": 0.023751815247116215,
+   "under_weight": 0.855876647861307,
+   "ewma_alpha": 0.3,
+   "bias_alpha": 1.0,
+   "window": 5
+  }
+ },
+ "edge_flags": {
+  "PI": [
+   "filter_alpha=1.0 (extreme du jeu)"
+  ],
+  "PI_FF": [
+   "ff_alpha=1.0 (extreme du jeu)",
+   "filter_alpha=1.0 (extreme du jeu)",
+   "bias_alpha=0.0 (extreme du jeu)"
+  ],
+  "FF_obs": [
+   "kp=0 (bord)",
+   "ki=0 (bord)",
+   "ff_alpha=1.0 (extreme du jeu)",
+   "filter_alpha=1.0 (extreme du jeu)",
+   "bias_alpha=1.0 (extreme du jeu)"
+  ],
+  "MPC_persist": [
+   "ewma_alpha=1.0 (extreme du jeu)",
+   "bias_alpha=1.0 (extreme du jeu)"
+  ],
+  "MPC_ma": [
+   "gamma=0.7 (extreme du jeu)",
+   "window=5 (extreme du jeu)",
+   "bias_alpha=1.0 (extreme du jeu)"
+  ],
+  "MPC_arima": [
+   "gamma=0.7 (extreme du jeu)",
+   "window=5 (extreme du jeu)",
+   "bias_alpha=1.0 (extreme du jeu)"
+  ]
+ },
+ "test_summary": {
+  "PI": {
+   "nominal": {
+    "stationary": {
+     "mae": 0.9557807520560324,
+     "sync": 5.0168336673346685
+    },
+    "burst": {
+     "mae": 4.7436110586562465,
+     "mae_burst": 9.774335597172515,
+     "peak": 1.9097553286345108,
+     "sync": 8.562124248496996
+    },
+    "lowload": {
+     "mae": 27.933241616401936,
+     "mae_burst": 9.99055089955753,
+     "peak": 1.305934523392867,
+     "sync": 2.7300601202404806
+    }
+   },
+   "stress": {
+    "stationary": {
+     "mae": 2.0724596048264257,
+     "sync": 5.010020040080161
+    },
+    "burst": {
+     "mae": 7.059168874503254,
+     "mae_burst": 11.04774200848281,
+     "peak": 2.272466375177557,
+     "sync": 8.589579158316635
+    }
+   }
+  },
+  "PI_FF": {
+   "nominal": {
+    "stationary": {
+     "mae": 0.9501248321230621,
+     "sync": 5.03807615230461
+    },
+    "burst": {
+     "mae": 1.4852838379902524,
+     "mae_burst": 1.6231484000358403,
+     "peak": 1.4100018310546876,
+     "sync": 8.688977955911826
+    },
+    "lowload": {
+     "mae": 30.934994332922326,
+     "mae_burst": 16.269968168738536,
+     "peak": 1.1016787719726562,
+     "sync": 2.880360721442886
+    }
+   },
+   "stress": {
+    "stationary": {
+     "mae": 1.7460694877595728,
+     "sync": 5.0350701402805615
+    },
+    "burst": {
+     "mae": 3.465874092692716,
+     "mae_burst": 3.142048441061159,
+     "peak": 1.9562945197610293,
+     "sync": 8.660921843687376
+    }
+   }
+  },
+  "FF_obs": {
+   "nominal": {
+    "stationary": {
+     "mae": 0.49148796764799824,
+     "sync": 5.010020040080161
+    },
+    "burst": {
+     "mae": 0.9351511737622367,
+     "mae_burst": 1.8754404230923214,
+     "peak": 1.3878402099609375,
+     "sync": 8.635470941883769
+    },
+    "lowload": {
+     "mae": 27.315587655665905,
+     "mae_burst": 8.321452741704954,
+     "peak": 1.134782780086125,
+     "sync": 2.70440881763527
+    }
+   },
+   "stress": {
+    "stationary": {
+     "mae": 0.5431277899441048,
+     "sync": 5.010020040080161
+    },
+    "burst": {
+     "mae": 1.5884772279725072,
+     "mae_burst": 3.780854113530386,
+     "peak": 1.75968017578125,
+     "sync": 8.676152304609218
+    }
+   }
+  },
+  "MPC_persist": {
+   "nominal": {
+    "stationary": {
+     "mae": 0.483501954473197,
+     "sync": 5.010220440881764
+    },
+    "burst": {
+     "mae": 0.935835538441635,
+     "mae_burst": 1.8981975148081918,
+     "peak": 1.3896035156250002,
+     "sync": 8.635671342685372
+    },
+    "lowload": {
+     "mae": 27.316697514759348,
+     "mae_burst": 8.323880783427656,
+     "peak": 1.1372118703135246,
+     "sync": 2.70440881763527
+    }
+   },
+   "stress": {
+    "stationary": {
+     "mae": 0.5495904340251749,
+     "sync": 5.010020040080161
+    },
+    "burst": {
+     "mae": 1.5937448719503788,
+     "mae_burst": 3.786406777791792,
+     "peak": 1.7502242431640624,
+     "sync": 8.676352705410821
+    }
+   }
+  },
+  "MPC_ma": {
+   "nominal": {
+    "stationary": {
+     "mae": 0.48300999698707753,
+     "sync": 5.009819639278558
+    },
+    "burst": {
+     "mae": 1.1120677227472204,
+     "mae_burst": 2.437876971998258,
+     "peak": 1.569227401069973,
+     "sync": 8.62565130260521
+    },
+    "lowload": {
+     "mae": 27.287428319448253,
+     "mae_burst": 8.098075787704497,
+     "peak": 1.21278076171875,
+     "sync": 2.6981963927855714
+    }
+   },
+   "stress": {
+    "stationary": {
+     "mae": 0.5365834427521031,
+     "sync": 5.008216432865732
+    },
+    "burst": {
+     "mae": 1.660853459601137,
+     "mae_burst": 4.059996842592353,
+     "peak": 1.9224109272711836,
+     "sync": 8.668737474949902
+    }
+   }
+  },
+  "MPC_arima": {
+   "nominal": {
+    "stationary": {
+     "mae": 0.5541121331149662,
+     "sync": 5.010821643286574
+    },
+    "burst": {
+     "mae": 1.109211392688883,
+     "mae_burst": 2.3312095271060373,
+     "peak": 1.4705095887229915,
+     "sync": 8.644689378757516
+    },
+    "lowload": {
+     "mae": 27.38974667510543,
+     "mae_burst": 8.519056229577501,
+     "peak": 1.1468792148403355,
+     "sync": 2.707214428857715
+    }
+   },
+   "stress": {
+    "stationary": {
+     "mae": 0.591653791301679,
+     "sync": 5.011823647294589
+    },
+    "burst": {
+     "mae": 1.7572928728862642,
+     "mae_burst": 4.1610970815779895,
+     "peak": 1.820036630743577,
+     "sync": 8.69679358717435
+    }
+   }
+  }
+ }
+}
