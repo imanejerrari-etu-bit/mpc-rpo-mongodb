@@ -10,6 +10,13 @@ réglage refait), 6 répétitions chacune = 24 runs (~2,5 h), blocs randomisés 
 (redémarrage du conteneur, débit acquitté, erreurs d'insertion). Cache WiredTiger limité à 1 Go ; l'environnement
 (processeur, mémoire, disque, version de MongoDB) est enregistré. La plateforme est partagée et peut être bruitée.
 
+## Écart au protocole connu avant le lancement
+Le runner a un noyau Linux >= 6.19, avec lequel MongoDB 8.x ne démarre pas (SERVER-121912). Le contournement de la communauté
+`GLIBC_TUNABLES=glibc.pthread.rseq=1` est appliqué au conteneur ; ce n'est pas un correctif officiel. Il concerne l'allocateur
+mémoire, pas le chemin du journal, mais son effet sur les mesures n'est pas vérifié : il est déclaré comme écart. La version
+de MongoDB visée est 8.0.32 (celle du cluster principal), avec repli sur 8.0 si l'étiquette n'existe pas ; la version réelle
+et le noyau sont enregistrés (`analysis_ci/mongo_image.txt`, `kernel.txt`).
+
 ## Critères de réussite déclarés à l'avance (descriptifs, n = 6)
 - R1 : l'erreur de rafale de PI_tuned est au moins 3 fois celle de chacun des trois contrôleurs à anticipation.
 - R2 : FF_obs et MPC_persist sont équivalents sur l'erreur de rafale (marge 0,7 point) et sur le pic (marge 0,10).

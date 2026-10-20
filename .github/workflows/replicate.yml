@@ -32,11 +32,19 @@ jobs:
           mkdir -p analysis_ci
           { uname -a; lscpu | head -20; free -m; df -h /; docker --version; } > analysis_ci/environment.txt
       - name: Start MongoDB (plain Docker)
+        # MongoDB 8.x refuses to start on Linux kernel >= 6.19 (SERVER-121912, TCMalloc/rseq).
+        # Community workaround: GLIBC_TUNABLES=glibc.pthread.rseq=1 (not an official fix; recorded as a deviation).
         run: |
+          uname -r | tee analysis_ci/kernel.txt
+          IMG=mongo:8.0.32
+          docker pull "$IMG" || IMG=mongo:8.0
+          echo "image: $IMG" | tee analysis_ci/mongo_image.txt
           docker run -d --name mongo -p 27017:27017 \
+            -e GLIBC_TUNABLES=glibc.pthread.rseq=1 \
             -e MONGO_INITDB_ROOT_USERNAME=bench -e MONGO_INITDB_ROOT_PASSWORD=ci-throwaway \
-            mongo:8.0 --wiredTigerCacheSizeGB 1
-          docker ps
+            "$IMG" --wiredTigerCacheSizeGB 1
+          sleep 5
+          docker ps -a
       - name: Wait until MongoDB accepts an authenticated connection
         env:
           MONGO_URI: mongodb://localhost:27017
