@@ -59,6 +59,7 @@ résultat dans `tuned_specs.json` (utilisé par `make_schedule.py --specs tuned_
 3. Le signal ne lit jamais la valeur commandée (voir `adapters/base.py`).
 4. Après chaque campagne : copie de `data\raw` sur un 2e support + `git commit`.
 
-## Réplication sur une seconde plateforme (sans matériel supplémentaire)
+## Réplication sur une seconde plateforme (sans matériel supplémentaire) — réalisée
+`python experiments\analyze_replication.py --raw data\raw_ci --env analysis_ci --lab analysis_S --out paper` vérifie R1 à R3 et génère `paper/numbers_ci.tex`, `paper/tab_ci.tex`.
 `.github/workflows/replicate.yml` + `experiments/make_replication.py` + `docs/AMENDEMENT_3.md` : 24 runs sur un runner Linux gratuit
 (dépôt public). Voir `docs/PUBLISH_GITHUB.md`.

@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this code or data, please cite the associated article (details to be completed after publication)."
+title: "mpc-rpo-mongodb: PI, feedforward and MPC control of the MongoDB journal commit interval (code, schedules, run data, manuscript sources)"
+version: "1.0"
+type: software
+authors:
+  - family-names: Jerrari
+    given-names: Imane
+    affiliation: "Laboratory of Information Systems (LIS), Faculty of Sciences Ain Chock, Hassan II University of Casablanca"
+  - family-names: Assayad
+    given-names: Ismail
+    affiliation: "ENSEM, Hassan II University of Casablanca"
+repository-code: "https://github.com/imanejerrari-etu-bit/mpc-rpo-mongodb"
+keywords:
+  - model predictive control
+  - feedforward
+  - MongoDB
+  - write-behind
+  - journal commit interval

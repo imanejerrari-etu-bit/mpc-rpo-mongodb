@@ -26,3 +26,10 @@ Aucune conclusion sur le PI avec anticipation ne sera tirée de cette réplicati
 
 ## Ce qu'elle ne démontre pas
 Ni un cluster multi-nœuds, ni un jeu de réplication, ni la perte de données réelle.
+
+## Compte rendu (ajouté après la réplication)
+Essai « smoke » (4 runs, noyau 6.17) exclu de l'analyse : il ne sert qu'à vérifier le circuit. La réplication retenue : 24 runs, noyau
+7.0.0-1017-azure, MongoDB 8.0.32 (Docker), AMD EPYC 7763 (4 vCPU, 16 Go), tous valides. Les trois critères déclarés ci-dessus sont satisfaits
+(rapports d'erreur 6,2 à 7,1 ; équivalence FF_obs / MPC_persist sur l'erreur et le pic ; pic du PI réglé le plus haut). Résultat exploratoire
+non déclaré comme critère : l'avantage de PI_FF sur MPC_persist observé sur la plateforme principale (-0,44 point) change de signe (+0,20) :
+il dépend de la plateforme.

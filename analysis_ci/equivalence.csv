@@ -1,0 +1,3 @@
+scenario,metric,A,B,margin,diff,ci90_lo,ci90_hi,equivalent
+burst,mae_burst_pct,FF_obs,MPC_persist,0.7,0.1278202526036072,-0.1376758345448872,0.39331633975210156,True
+burst,peak_ratio,FF_obs,MPC_persist,0.1,0.0015497076023391898,-0.03144385194700194,0.03454326715168032,True

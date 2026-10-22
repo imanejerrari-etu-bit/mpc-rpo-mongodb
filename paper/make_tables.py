@@ -126,12 +126,12 @@ def main():
     Sm = json.load(open(a.step2))
     L = ["\\begin{table}[t]\\centering\\small",
          "\\caption{Static plant: measured exposed volume $V$ (kB per sync) versus the model $V=R(J+pL_0)/p$, $p=\\min(1,RJ/b_0)$, $b_0=513$\\,B, $L_0=7$\\,ms.}\\label{tab:plant}",
-         "\\begin{tabular}{rrrrrr}\\toprule", "Load (docs/s) & $J$ (ms) & $R$ (kB/s) & $V$ meas. & $V$ model & err. (\\%)\\\\\\midrule"]
+         "\\resizebox{\\columnwidth}{!}{\\begin{tabular}{rrrrrr}\\toprule", "Load (docs/s) & $J$ (ms) & $R$ (kB/s) & $V$ meas. & $V$ model & err. (\\%)\\\\\\midrule"]
     errs = []
     for s in Sm:
         R = s["bytes_per_s"]; V = s["V_per_sync_B"]; Vm = float(v_model(R, s["J_ms"] / 1000, 513.0, 0.007)); errs.append(abs(Vm / V - 1) * 100)
         L.append(f"{s['tps_nominal']:.0f} & {s['J_ms']} & {R/1024:.1f} & {V/1024:.2f} & {Vm/1024:.2f} & {(Vm/V-1)*100:+.1f}\\\\")
-    L += ["\\bottomrule\\end{tabular}\\end{table}"]
+    L += ["\\bottomrule\\end{tabular}}\\end{table}"]
     open(os.path.join(a.out, "tab_plant.tex"), "w").write("\n".join(L) + "\n")
 
     # ---- measurement noise (step 2 grid + step 3b ticks) ---------------------------------------------------------

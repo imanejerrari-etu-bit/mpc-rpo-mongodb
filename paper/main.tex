@@ -7,6 +7,7 @@
 \usepackage{booktabs}
 \usepackage{url}
 \input{numbers.tex}
+\input{numbers_ci.tex}
 \newcommand{\todo}[1]{\textbf{[TODO: #1]}}
 \journalname{Draft}
 
@@ -48,8 +49,7 @@ observed load. A model predictive controller with persistence forecasting is
 equivalent to a plain load feedforward with a model-bias observer on both primary criteria
 (burst error and exposure peak); a moving-average forecaster is worse and an ARIMA forecaster
 brings no gain. Adding PI feedback to the feedforward lowers the mean burst error slightly but doubles
-the actuator movement and slows recovery under saturation. The conclusions are limited to one engine, one
-deployment and one platform, and the signal measures exposure, not observed data loss.
+the actuator movement and slows recovery under saturation. A replication of the burst scenario on a second platform (a shared Linux runner, no WSL2) reproduces the ordering and the MPC--feedforward equivalence but not the lower burst error of PI with feedforward. The conclusions are limited to one engine, single-node deployments and two hosts, and the signal measures exposure, not observed data loss.
 The sensitivity analysis shows that the responsiveness of the load estimate is the parameter that matters, and that a 50\,\% higher gain makes PI with feedforward oscillate whereas the feedforward with observer and MPC stay stable over every perturbation tested.
 \keywords{Model predictive control \and PI control \and Feedforward \and MongoDB \and
 Write-behind \and Recovery point objective \and Journal commit interval}
@@ -90,7 +90,7 @@ optimisation, explains the gain over a feedback-only PI controller
 (Section~\ref{sec:limits}).
 
 \paragraph{Scope.}
-One engine (MongoDB 8.0.32, single pod), one host (Kind on WSL2), one knob. The
+One engine (MongoDB 8.0.32, single pod), one main host (Kind on WSL2) plus a replication of the burst scenario on a second host, one knob. The
 results do not transfer to other engines without new identification, and no
 crash-recovery experiment was run: the signal measures exposure of journal
 data, not observed data loss.
@@ -135,7 +135,7 @@ latency. A log-linear fit on the six points above the floor gives $\ln V=-6.68+1
 (maximum error 1.4\,\%). In logarithms the actuator acts additively with a gain close to one and the
 load is an additive disturbance, which justifies the additive model used by the controllers.
 Table~\ref{tab:plant} and Fig.~\ref{fig:plant} compare the model with the measurements
-(median error \plantMedErr\,\%, maximum \plantMaxErr\,\%).
+(median error \plantMedErr\,\%, maximum \plantMaxErr\,\%). The largest errors are at $J=20$\,ms, where the measured mean sync latency (2--3\,ms at 400 documents/s and above) is below the constant $L_0=7$\,ms of the model; the bias observer of Section~\ref{sec:controllers} absorbs this mismatch.
 
 \begin{figure}[t]\centering
 \includegraphics[width=\columnwidth]{figures/fig_plant.pdf}
@@ -159,7 +159,11 @@ and the steady-state error floor of 1.2--1.5\,\% seen in closed loop is of the s
 \input{tab_noise.tex}
 
 \section{Controllers and tuning}\label{sec:controllers}
-All controllers work on $e=\ln V^*-\ln\hat V$ and command $J\in[20,500]$\,ms every 0.5\,s.
+All controllers work on $e=\ln V^*-\ln\hat V$ and command $J\in[20,500]$\,ms every 0.5\,s (Fig.~\ref{fig:scheme}).
+\begin{figure}[t]\centering
+\includegraphics[width=\columnwidth]{figures/fig_scheme.pdf}
+\caption{Control structure shared by all controllers. FF+obs has no PI/MPC block; PI has no feedforward; the MPC replaces the PI correction by an optimisation over a forecast of the load.}\label{fig:scheme}
+\end{figure}
 \paragraph{PI.} $u=u_0+K_p e+K_i\sigma$ with integrator $\sigma$, clamp or back-calculation anti-windup, and optional filtering of $\ln\hat V$.
 \paragraph{Feedforward with observer (FF+obs).}
 With $\hat R$ the smoothed per-tick byte rate, $J_\mathrm{ff}=V^*e^{-b}/\hat R-L_0$, where the bias
@@ -223,15 +227,14 @@ neither forecaster improves on persistence.
 \input{tab_equiv.tex}
 
 \paragraph{PI with feedforward.}
-PI-FF has the lowest burst error, \cAMaePIFFMPCPS\ pp below MPC (Table~\ref{tab:contrasts}), with no difference on the exposure peak. It also moves $J$ about twice as much
+On the main platform PI-FF has the lowest burst error, \cAMaePIFFMPCPS\ pp below MPC (Table~\ref{tab:contrasts}), with no difference on the exposure peak; this did not replicate on the second platform (Section~\ref{sec:replication}). It also moves $J$ about twice as much
 (\ChatPIFFS\ against \ChatMPCPS\ in $|\Delta\ln J|$ per tick) and, when the target is unreachable and the actuator saturates (low-load scenario), recovers in \LowRecPIFFS\,s against \LowRecMPCPS\,s
 for MPC (Table~\ref{tab:other}).
 \input{tab_other.tex}
 
 \paragraph{A journal-sync stall.}
 One run (FF+obs, first run after the pod was recreated) shows no journal sync for 12.5\,s during the burst, then 1.5\,s and 1\,s; its burst error is 171\,\% and its peak $39\times V^*$. It is valid under the
-pre-specified rules and is included in the primary analysis; the sensitivity analysis excludes runs with a sync gap of 5\,s or more (a rule defined from the counters, post hoc). The cause is unknown; four
-shorter gaps (1--1.5\,s) occur in two other runs. Counters of journal pre-allocation are now recorded to investigate such events.
+pre-specified rules and is included in the primary analysis; the sensitivity analysis excludes runs with a sync gap of 5\,s or more (a rule defined from the counters, post hoc). The cause is unknown; two shorter gaps (1 and 1.5\,s) occur in two other runs of the main analysis, and one gap of 3.5\,s in a sensitivity run. Counters of journal pre-allocation are now recorded to investigate such events.
 
 \paragraph{Simulator versus real cluster.}
 The simulator was calibrated on the static grid (worst error 3.9\,\% on $V$) and on the burst response. On the pilot the ranking of the seven controllers by burst error is identical to the simulated
@@ -254,6 +257,18 @@ at the unreachable $V^*=2048$\,B the MPC has a larger error than FF+obs.
 \input{tab_sens.tex}
 \input{tab_vstar.tex}
 
+\subsection{Replication on a second platform}\label{sec:replication}
+To reduce the single-host limitation, the burst scenario was replayed for four controllers (PI, PI-FF, FF+obs, MPC with persistence), 6 runs each, on a shared GitHub-hosted Linux runner
+(\CICpu, 4 vCPU, \CIRam\,GB, kernel \CIKernel) with MongoDB \CIImage\ in plain Docker, without WSL2 or Kubernetes. The specifications were not re-tuned. MongoDB 8.x refuses to start on this kernel
+(SERVER-121912, an allocator incompatibility); the community workaround \texttt{GLIBC\_TUNABLES=glibc.pthread.rseq=1} was applied. It concerns the memory allocator, not the journal path, but its effect on the
+measurements is not verified. Three criteria were fixed before the runs: R1 (the PI burst error is at least three times that of each load-aware controller), R2 (FF+obs and MPC equivalent, same margins as above) and R3
+(the PI exposure peak is the highest). All \CIN\ runs were valid.
+Table~\ref{tab:ci} gives the results. R1 is \CIRone\ (ratios \CIRatioPIFF, \CIRatioFFO\ and \CIRatioMPCP), R2 is \CIRtwo\ (error difference \CIeqMaeD\ pp, 90\,\% CI [\CIeqMaeLo, \CIeqMaeHi]; peak difference
+\CIeqPeakD, [\CIeqPeakLo, \CIeqPeakHi]) and R3 is \CIRthree. One finding did not replicate: on the main platform PI-FF had a lower burst error than MPC ($-$\cAMaePIFFMPCPS\ pp); on the second platform the difference is
+\CIPIFFvsMPCD\ pp (95\,\% CI [\CIPIFFvsMPCLo, \CIPIFFvsMPCHi]), so the sign of the difference is the opposite of the main platform: it is platform-dependent and should not be generalised.
+The second platform widens the range of hosts, not the topology: it is still a single node.
+\input{tab_ci.tex}
+
 \section{Discussion}\label{sec:discussion}
 \paragraph{Why prediction does not help here.}
 The actuator acts on $V$ within one control tick, while the sensor is delayed by the 10\,s window. A controller that knows $\hat R$ and the static law can therefore set $J$ almost
@@ -265,17 +280,17 @@ burst error five to eight times larger than PI-FF, FF+obs and MPC with persisten
 \paragraph{What matters.}
 The controller structure matters less than the responsiveness of the load estimate: smoothing it more than the plant requires doubles the burst error for every load-aware controller (Table~\ref{tab:sens}), while the MPC weights and the observer factor are second order.
 \paragraph{Practical guidance.}
-On this engine and knob, a load feedforward with a model-bias observer is the simplest controller that attains the accuracy of MPC and it was stable over every perturbation tested. PI with feedforward has the lowest nominal burst error but the least margin: a 50\,\% higher gain made it oscillate,
+On this engine and knob, a load feedforward with a model-bias observer is the simplest controller that attains the accuracy of MPC and it was stable over every perturbation tested. On the main platform PI with feedforward has the lowest nominal burst error (not replicated on the second platform) and the least margin: a 50\,\% higher gain made it oscillate,
 and it moves the actuator twice as much and recovers more slowly under saturation. We therefore see feedback as optional: useful only with a gain margin that is measured, not assumed.
 
 \section{Limitations}\label{sec:limits}
-(i) One engine, one single-pod deployment and one Kind host under WSL2; (ii) $V$ is a composite of two counters and no crash-recovery experiment verifies it as data loss;
+(i) One engine and single-node deployments on two hosts (Kind under WSL2, and a shared Linux runner with MongoDB in Docker for the burst scenario only, which required a community workaround for a kernel incompatibility of MongoDB 8.x whose effect on the measurements is not verified); (ii) $V$ is a composite of two counters and no crash-recovery experiment verifies it as data loss;
 (iii) the simulator underestimates noise and between-run variability; (iv) tuning was done on the simulator and checked on a pilot; (v) one run contains a long journal-sync stall of unknown cause;
 (vi) the simulator reproduces the nominal behaviour but not the fragility of PI-FF near its stability limit (a 50\,\% higher gain does not oscillate in simulation unless one extra tick of delay is added, which reproduces it qualitatively), so unmodelled delay is a plausible but unverified cause; (vii) the pod restarted once between two sessions of the sensitivity campaign (each run individually valid); (viii) equivalence margins are set from the noise floor and a different margin could change an ``inconclusive'' into ``equivalent'' or the reverse; (ix) the sensitivity analysis is descriptive ($n=3$ per variant) and one-at-a-time, so interactions between parameters are not explored.
 
 \section{Conclusion}\label{sec:conclusion}
 On a real MongoDB cluster, using the observed write load is what lets a controller hold the exposed journal volume near its target during bursts. A model predictive controller with persistence forecasting is equivalent to a plain
-feedforward with a model-bias observer, and forecasting the load with a moving average or ARIMA does not help. The advantage of the feedforward does not depend on a precise tuning, except for the responsiveness of the load estimate, and a feedback term must be added with a measured gain margin. These conclusions are limited to the scenarios, engine and platform tested.
+feedforward with a model-bias observer, and forecasting the load with a moving average or ARIMA does not help. The advantage of the feedforward does not depend on a precise tuning, except for the responsiveness of the load estimate, and a feedback term must be added with a measured gain margin. The ordering of PI against the load-aware controllers and the equivalence of MPC and feedforward with observer replicated on a second platform; the lower burst error of PI with feedforward did not. These conclusions are limited to the scenarios, engine and platforms tested.
 
 \begin{acknowledgements}
 \todo{acknowledgements, if any}
@@ -283,8 +298,7 @@ feedforward with a model-bias observer, and forecasting the load with a moving a
 
 \section*{Declarations}
 \textbf{Funding.} No funding was received. \textbf{Competing interests.} The authors declare no competing interests.
-\textbf{Data and code availability.} \todo{insert the public repository URL after publishing the code (mpcrpo), the 134+ run files, the schedules and the analysis scripts; the earlier repository does not contain them}.
-\textbf{Use of AI tools.} \todo{describe, as required by the target journal, any use of AI assistance in code, analysis or writing}.
+\textbf{Data and code availability.} The code (\texttt{mpcrpo}), the run schedules, the tuned specifications, all run files (main study, sensitivity analysis and replication), the analysis scripts, the amendments written before each data collection and the sources of this manuscript are available at \url{https://github.com/imanejerrari-etu-bit/mpc-rpo-mongodb}, release \texttt{v1.0}. \todo{confirm that release v1.0 exists and add its commit hash before submission}. \textbf{Use of AI tools.} \todo{describe, as required by the target journal, any use of AI assistance in code, analysis or writing}.
 
 \begin{thebibliography}{9}
 \bibitem{camacho2013model}
