@@ -1,4 +1,4 @@
-\documentclass[twocolumn]{svjour3}
+\documentclass[smallextended]{svjour3}
 \smartqed
 \usepackage{graphicx}
 \usepackage{microtype}
@@ -9,7 +9,7 @@
 \input{numbers.tex}
 \input{numbers_ci.tex}
 \newcommand{\todo}[1]{\textbf{[TODO: #1]}}
-\journalname{Draft}
+\journalname{Computing}
 
 \begin{document}
 
@@ -34,23 +34,15 @@ Model Predictive Control of the MongoDB Journal Commit Interval under Load Burst
 \maketitle
 
 \begin{abstract}
-Database engines expose a write-behind setting, the journal commit interval,
-that trades durability against write cost, yet it is almost always fixed at
-deployment. We ask whether a feedback or predictive controller can keep the
-volume of journal data not yet synchronised to disk near a target when the
-write load bursts, and whether predicting the load helps. On MongoDB we derive
-the controlled variable from engine counters alone, identify the plant (a
-static law $V\approx R\,(J+pL)/p$, a 10\,s measurement window, a 5\,ms
-actuator) and compare seven controllers in a pre-specified, interleaved,
-randomised design with 135 valid runs on a real cluster (81 more for a sensitivity analysis), tuned with an equal
-budget. A tuned PI controller using feedback only has a burst error of
-\MaePITS\,\% against \MaePIFFS--\MaeMPCMS\,\% for every controller that uses the
-observed load. A model predictive controller with persistence forecasting is
-equivalent to a plain load feedforward with a model-bias observer on both primary criteria
-(burst error and exposure peak); a moving-average forecaster is worse and an ARIMA forecaster
-brings no gain. Adding PI feedback to the feedforward lowers the mean burst error slightly but doubles
-the actuator movement and slows recovery under saturation. A replication of the burst scenario on a second platform (a shared Linux runner, no WSL2) reproduces the ordering and the MPC--feedforward equivalence but not the lower burst error of PI with feedforward. The conclusions are limited to one engine, single-node deployments and two hosts, and the signal measures exposure, not observed data loss.
-The sensitivity analysis shows that the responsiveness of the load estimate is the parameter that matters, and that a 50\,\% higher gain makes PI with feedforward oscillate whereas the feedforward with observer and MPC stay stable over every perturbation tested.
+Database engines expose a write-behind setting, the journal commit interval, that trades durability against write cost, yet it is almost always fixed at
+deployment. We ask whether a controller can keep the volume of journal data not yet synchronised to disk near a target when the write load bursts,
+and whether predicting the load helps. On MongoDB we derive the controlled variable from engine counters, identify the plant, and compare seven controllers
+in a pre-specified, interleaved, randomised design on a real cluster (135 valid runs, tuned with an equal budget). A tuned feedback-only PI controller has a
+burst error of \MaePITS\,\% against \MaePIFFS--\MaeMPCMS\,\% for every controller that uses the observed load. Model predictive control with persistence
+forecasting is equivalent to a plain load feedforward with a model-bias observer on both primary criteria; moving-average forecasting is worse and ARIMA brings no gain.
+The responsiveness of the load estimate is the parameter that matters, and a 50\,\% higher gain makes PI with feedforward oscillate. A replication on a second platform
+reproduces these findings but not the lower burst error of PI with feedforward. The conclusions are limited to one engine and single-node deployments, and the signal
+measures exposure, not observed data loss.
 \keywords{Model predictive control \and PI control \and Feedforward \and MongoDB \and
 Write-behind \and Recovery point objective \and Journal commit interval}
 \end{abstract}
@@ -199,6 +191,11 @@ Seven contrasts, Mann--Whitney tests with Holm correction over 14 tests, Cliff's
 for the pairs where the claim is ``no difference'', with margins of 0.7 percentage points (burst error) and 0.10 (peak). Margins are about
 half the steady-state noise floor.
 
+\paragraph{Use of AI assistance.}
+An AI assistant (Claude, Anthropic) was used during the study to help design the protocol and the analysis plan, to write and test the code of the controllers, the simulator, the run orchestration and the analysis scripts,
+to generate the figures and tables, to diagnose experimental problems and to draft and edit the text. All experiments were run by the authors on their own infrastructure; all reported data come from those runs, and every number in the tables
+and in the text is produced by the released scripts from the released run files.
+
 \section{Results}\label{sec:results}
 \paragraph{Data.}
 135 main runs (pilot 63, campaign 71, one replacement run), all valid, plus 81 sensitivity runs, all valid; no pod restarted during any run, acknowledged/offered rate between 0.964 and 1.002. The pod was recreated once between the pilot and the campaign and restarted once between two sessions of the sensitivity campaign (13 runs before, 69 after; the concurrent nominal controls were run after).
@@ -292,13 +289,15 @@ and it moves the actuator twice as much and recovers more slowly under saturatio
 On a real MongoDB cluster, using the observed write load is what lets a controller hold the exposed journal volume near its target during bursts. A model predictive controller with persistence forecasting is equivalent to a plain
 feedforward with a model-bias observer, and forecasting the load with a moving average or ARIMA does not help. The advantage of the feedforward does not depend on a precise tuning, except for the responsiveness of the load estimate, and a feedback term must be added with a measured gain margin. The ordering of PI against the load-aware controllers and the equivalence of MPC and feedforward with observer replicated on a second platform; the lower burst error of PI with feedforward did not. These conclusions are limited to the scenarios, engine and platforms tested.
 
-\begin{acknowledgements}
-\todo{acknowledgements, if any}
-\end{acknowledgements}
-
 \section*{Declarations}
 \textbf{Funding.} No funding was received. \textbf{Competing interests.} The authors declare no competing interests.
-\textbf{Data and code availability.} The code (\texttt{mpcrpo}), the run schedules, the tuned specifications, all run files (main study, sensitivity analysis and replication), the analysis scripts, the amendments written before each data collection and the sources of this manuscript are available at \url{https://github.com/imanejerrari-etu-bit/mpc-rpo-mongodb}, release \texttt{v1.0}. \todo{confirm that release v1.0 exists and add its commit hash before submission}. \textbf{Use of AI tools.} \todo{describe, as required by the target journal, any use of AI assistance in code, analysis or writing}.
+\textbf{Ethics approval.} Not applicable: the study involves no human participants or animals.
+\textbf{Author contributions.} All authors contributed to the study conception and design. The experiments, data collection and analysis were performed by I.~Jerrari. All authors read and approved the final manuscript.
+\textbf{Data availability.} The run files of the main study, of the sensitivity analysis and of the replication, the run schedules, the tuned specifications and the amendments written before each data collection are available at
+\url{https://github.com/imanejerrari-etu-bit/mpc-rpo-mongodb}, release \texttt{v1.0}. \todo{confirm that release v1.0 exists and add its commit hash before submission}
+\textbf{Code availability.} The code (\texttt{mpcrpo}), the analysis scripts and the sources of this manuscript are in the same repository and release.
+\textbf{Use of AI tools.} An AI assistant (Claude, Anthropic) was used for protocol design support, code writing and testing, figure and table generation, diagnosis and drafting of the text, as documented in Section~\ref{sec:protocol}.
+The authors reviewed the outputs and take full responsibility for the content of the publication; the AI tool is not listed as an author.
 
 \begin{thebibliography}{9}
 \bibitem{camacho2013model}

@@ -19,3 +19,17 @@
 - [ ] Le texte ne revendique ni perte de données mesurée, ni généralisation à d'autres moteurs ou topologies.
 - [ ] Le run avec arrêt du journal (FF_obs, rep04) est présenté avec et sans (analyse primaire et de sensibilité).
 - [ ] L'écart `GLIBC_TUNABLES` de la réplication est déclaré dans le texte.
+
+## Spécifique à *Computing* (Springer) — ce que j'ai pu vérifier, et ce qui reste à contrôler vous-même
+Vérifié (pages de présentation et extraits des consignes, à reconfirmer sur la page de soumission) :
+- [x] Portée : calcul adaptatif, autonomique et fiable ; calcul de services et de cloud : le sujet correspond.
+- [x] Gabarit : LaTeX **une colonne**, option `smallextended` (c'est ce que le brouillon utilise désormais) ; Springer recommande aussi son gabarit LaTeX « Springer Nature ».
+- [x] Politique de données Springer Nature : *Data Availability Statement* pour les articles originaux (présent dans *Declarations*).
+- [x] Adresse e-mail professionnelle ou institutionnelle obligatoire (les soumissions avec une adresse privée seraient renvoyées) : les deux adresses du brouillon sont institutionnelles.
+- [x] Auteurs : l'ordre et la liste doivent être corrects dès la soumission, tous les auteurs doivent avoir approuvé le manuscrit.
+À contrôler (la page des consignes détaillées ne s'est pas chargée lors de ma vérification) :
+- [ ] Longueur maximale du résumé et du manuscrit, nombre de mots-clés (le résumé fait environ 200 mots).
+- [ ] **Frais de publication** (page « Fees and funding » de la revue) : Springer Nature a introduit des frais obligatoires sur au moins une autre revue en 2026 (signalé pour *Statistics and Computing*) ; je n'ai pas vérifié si c'est le cas pour *Computing*.
+- [ ] Politique sur l'IA : l'usage est documenté dans la méthode (section 5) et dans *Declarations*, selon ma connaissance de la politique de Springer Nature, à reconfirmer.
+- [ ] Politique sur la soumission d'un manuscrit rejeté dans une autre revue du même éditeur (la lettre le déclare).
+- [ ] Lire la section « Ethical Responsibilities of Authors » de la revue.

@@ -3,7 +3,9 @@
 Dear Editor,
 
 Please find enclosed our manuscript, "Load Feedforward, Not Prediction: An Empirical Comparison of PI and Model Predictive Control of the
-MongoDB Journal Commit Interval under Load Bursts", for consideration in [JOURNAL].
+MongoDB Journal Commit Interval under Load Bursts", for consideration in *Computing* (Springer).
+
+**Fit with the journal.** *Computing* lists autonomic, adaptive and dependable computing and services and cloud computing among its subjects and asks for computational relevance and systematic foundation of results. The paper studies adaptive control of a database durability setting on a containerised cluster and bases its conclusions on a pre-specified, replicated experimental design.
 
 **What the paper does.** Database engines expose a write-behind setting, the journal commit interval, that trades durability against write cost.
 We ask whether a feedback or predictive controller can keep the volume of journal data not yet synchronised to disk near a target during write-load
@@ -16,7 +18,7 @@ Model predictive control with persistence forecasting is statistically equivalen
 forecasting is worse and ARIMA brings no gain. The responsiveness of the load estimate is the parameter that matters; PI with feedforward has the lowest
 nominal burst error on our main platform but loses stability with a 50 % higher gain, and its advantage over MPC did not replicate on the second platform.
 
-**Relation to a previous submission.** An earlier version of this study was submitted to another journal and rejected. Its reviewers noted that the PI
+**Relation to a previous submission.** An earlier version of this study was submitted to *Cluster Computing* (Springer) and rejected. Its reviewers noted that the PI
 baseline was untuned, had no anti-windup and no load information, that parameters were not varied or reported, that the signal was not defined, and that
 the claimed decision criterion did not generalise across engines. We addressed each point by redoing the study from scratch (new experiments, new controlled
 variable, new baselines including feedforward, equal tuning budget, sensitivity analysis, pre-specified statistics with multiplicity correction and equivalence
