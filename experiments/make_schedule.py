@@ -21,8 +21,11 @@ def controllers_from_tuned(path):
     """PI_default = untuned gains (naive baseline); PI_tuned / PI_FF / MPC_* = best spec of each family (equal budget)."""
     import json
     sp = json.load(open(path))["specs"]
-    return {"PI_default": CONTROLLERS["PI_default"], "PI_tuned": sp["PI"], "PI_FF": sp["PI_FF"], "FF_obs": sp["FF_obs"],
-            "MPC_persist": sp["MPC_persist"], "MPC_ma": sp["MPC_ma"], "MPC_arima": sp["MPC_arima"]}
+    out = {"PI_default": CONTROLLERS["PI_default"], "PI_tuned": sp["PI"], "PI_FF": sp["PI_FF"], "FF_obs": sp["FF_obs"],
+           "MPC_persist": sp["MPC_persist"], "MPC_ma": sp["MPC_ma"], "MPC_arima": sp["MPC_arima"]}
+    if "PI_fast" in sp:
+        out["PI_fast"] = sp["PI_fast"]
+    return out
 
 
 MAIN_REPS = {"stationary": 5, "burst": 10, "lowload": 6}

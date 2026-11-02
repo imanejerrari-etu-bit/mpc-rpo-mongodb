@@ -39,7 +39,8 @@ class BiasObserver:
 
 
 class PIController:
-    """PI on e = ln V* - ln V (lagged sensor). ff=True adds a feedforward from the fast load estimate."""
+    """PI on e = ln V* - ln V (lagged sensor). ff=True adds a feedforward from the fast load estimate.
+    fast_v=True replaces the lagged V by a fast model-based estimate of V (the PI on a fast signal baseline)."""
     name = "pi"
 
     def __init__(self, common: Common, cfg: PIConfig):
@@ -58,6 +59,9 @@ class PIController:
         self.Rf = obs["R_tick"] if self.Rf is None else p.ff_alpha * obs["R_tick"] + (1 - p.ff_alpha) * self.Rf
         if lnV is None:
             return self.J_prev
+        if p.fast_v and self.Rf:
+            # fast estimate of V from the instantaneous load and the static plant model, corrected by the bias observer
+            lnV = float(np.log(v_model(self.Rf, self.J_prev, c.b0_B, c.L0_s)) + b)
         self.yf = lnV if self.yf is None else p.filter_alpha * lnV + (1 - p.filter_alpha) * self.yf
         e = np.log(c.v_star_B) - self.yf
         if p.ff and self.Rf:

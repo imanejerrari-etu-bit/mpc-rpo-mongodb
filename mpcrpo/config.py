@@ -35,6 +35,7 @@ class PIConfig:
     ff: bool = False             # feedforward from the fast load estimate R
     bias_alpha: float = 0.0      # >0: model-bias observer (EWMA) used inside the feedforward
     ff_alpha: float = 0.5        # EWMA smoothing of the per-tick byte rate used by the feedforward (1.0 = raw)
+    fast_v: bool = False         # PI on a FAST estimate of V: v_model(R_fast, J_prev) * exp(bias) instead of the 10 s windowed V
 
 
 @dataclass

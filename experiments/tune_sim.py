@@ -63,13 +63,20 @@ def edge_flags(spec):
     return out
 
 
+def d_pifast(r):
+    """PI on a FAST model-based estimate of V (no feedforward term, no prediction): isolates the value of a fast signal."""
+    return {"type": "pi", "kp": float(r.uniform(*RANGES["kp"][:2])), "ki": float(r.uniform(*RANGES["ki"][:2])),
+            "antiwindup": str(r.choice(["clamp", "backcalc"])), "filter_alpha": float(r.choice(SETS["filter_alpha"])),
+            "fast_v": True, "bias_alpha": float(r.choice([0.05, 0.1, 0.3, 0.6, 1.0])), "ff_alpha": float(r.choice(SETS["ff_alpha"]))}
+
+
 def d_ffobs(r):
     """Minimal baseline: feedforward from the fast load estimate + model-bias observer, NO feedback, NO prediction."""
     return {"type": "pi", "ff": True, "kp": 0.0, "ki": 0.0, "antiwindup": "clamp", "filter_alpha": 1.0,
             "bias_alpha": float(r.choice([0.05, 0.1, 0.3, 0.6, 1.0])), "ff_alpha": float(r.choice(SETS["ff_alpha"]))}
 
 
-FAMILIES = {"PI": lambda r: d_pi(r, False), "PI_FF": lambda r: d_pi(r, True), "FF_obs": d_ffobs,
+FAMILIES = {"PI": lambda r: d_pi(r, False), "PI_FF": lambda r: d_pi(r, True), "FF_obs": d_ffobs, "PI_fast": d_pifast,
             "MPC_persist": lambda r: d_mpc(r, "persistence"), "MPC_ma": lambda r: d_mpc(r, "ma"),
             "MPC_arima": lambda r: d_mpc(r, "arima")}
 
