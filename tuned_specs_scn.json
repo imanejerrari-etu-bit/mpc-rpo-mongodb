@@ -1,0 +1,243 @@
+{
+ "budget": 60,
+ "tune_seeds": [
+  1000,
+  1001,
+  1002
+ ],
+ "specs": {
+  "ramp": {
+   "PI_tuned": {
+    "type": "pi",
+    "kp": 2.555107515539388,
+    "ki": 0.40468007064580547,
+    "antiwindup": "clamp",
+    "filter_alpha": 1.0
+   },
+   "FF_obs": {
+    "type": "pi",
+    "ff": true,
+    "kp": 0.0,
+    "ki": 0.0,
+    "antiwindup": "clamp",
+    "filter_alpha": 1.0,
+    "bias_alpha": 0.3,
+    "ff_alpha": 1.0
+   },
+   "MPC_persist": {
+    "type": "mpc",
+    "predictor": "persistence",
+    "horizon": 20,
+    "gamma": 1.0,
+    "lam": 0.068182830712718,
+    "under_weight": 0.7996968925198887,
+    "ewma_alpha": 1.0,
+    "bias_alpha": 1.0,
+    "window": 30
+   },
+   "MPC_arima": {
+    "type": "mpc",
+    "predictor": "arima",
+    "horizon": 20,
+    "gamma": 1.0,
+    "lam": 0.05522909641366669,
+    "under_weight": 0.6679363124544255,
+    "ewma_alpha": 0.15,
+    "bias_alpha": 0.6,
+    "window": 20
+   }
+  },
+  "periodic": {
+   "PI_tuned": {
+    "type": "pi",
+    "kp": 3.5547109162235357,
+    "ki": 0.33880414262598657,
+    "antiwindup": "clamp",
+    "filter_alpha": 1.0
+   },
+   "FF_obs": {
+    "type": "pi",
+    "ff": true,
+    "kp": 0.0,
+    "ki": 0.0,
+    "antiwindup": "clamp",
+    "filter_alpha": 1.0,
+    "bias_alpha": 1.0,
+    "ff_alpha": 1.0
+   },
+   "MPC_persist": {
+    "type": "mpc",
+    "predictor": "persistence",
+    "horizon": 20,
+    "gamma": 1.0,
+    "lam": 0.068182830712718,
+    "under_weight": 0.7996968925198887,
+    "ewma_alpha": 1.0,
+    "bias_alpha": 1.0,
+    "window": 30
+   },
+   "MPC_arima": {
+    "type": "mpc",
+    "predictor": "arima",
+    "horizon": 3,
+    "gamma": 0.7,
+    "lam": 0.023751815247116215,
+    "under_weight": 0.855876647861307,
+    "ewma_alpha": 0.3,
+    "bias_alpha": 1.0,
+    "window": 5
+   }
+  },
+  "periodicd1": {
+   "PI_tuned": {
+    "type": "pi",
+    "kp": 1.6301163224896822,
+    "ki": 0.297769566763883,
+    "antiwindup": "backcalc",
+    "filter_alpha": 1.0
+   },
+   "FF_obs": {
+    "type": "pi",
+    "ff": true,
+    "kp": 0.0,
+    "ki": 0.0,
+    "antiwindup": "clamp",
+    "filter_alpha": 1.0,
+    "bias_alpha": 1.0,
+    "ff_alpha": 1.0
+   },
+   "MPC_persist": {
+    "type": "mpc",
+    "predictor": "persistence",
+    "horizon": 3,
+    "gamma": 1.0,
+    "lam": 0.004151522148940408,
+    "under_weight": 0.23858739228379255,
+    "ewma_alpha": 1.0,
+    "bias_alpha": 1.0,
+    "window": 5
+   },
+   "MPC_arima": {
+    "type": "mpc",
+    "predictor": "arima",
+    "horizon": 3,
+    "gamma": 1.0,
+    "lam": 0.008316712626230918,
+    "under_weight": 0.2707542736573386,
+    "ewma_alpha": 0.15,
+    "bias_alpha": 1.0,
+    "window": 5
+   }
+  }
+ },
+ "edge_flags": {
+  "ramp": {
+   "PI_tuned": [
+    "filter_alpha=1.0 (extreme du jeu)"
+   ],
+   "FF_obs": [
+    "kp=0 (bord)",
+    "ki=0 (bord)",
+    "ff_alpha=1.0 (extreme du jeu)",
+    "filter_alpha=1.0 (extreme du jeu)"
+   ],
+   "MPC_persist": [
+    "horizon=20 (extreme du jeu)",
+    "gamma=1.0 (extreme du jeu)",
+    "ewma_alpha=1.0 (extreme du jeu)",
+    "bias_alpha=1.0 (extreme du jeu)"
+   ],
+   "MPC_arima": [
+    "horizon=20 (extreme du jeu)",
+    "gamma=1.0 (extreme du jeu)",
+    "ewma_alpha=0.15 (extreme du jeu)"
+   ]
+  },
+  "periodic": {
+   "PI_tuned": [
+    "filter_alpha=1.0 (extreme du jeu)"
+   ],
+   "FF_obs": [
+    "kp=0 (bord)",
+    "ki=0 (bord)",
+    "ff_alpha=1.0 (extreme du jeu)",
+    "filter_alpha=1.0 (extreme du jeu)",
+    "bias_alpha=1.0 (extreme du jeu)"
+   ],
+   "MPC_persist": [
+    "horizon=20 (extreme du jeu)",
+    "gamma=1.0 (extreme du jeu)",
+    "ewma_alpha=1.0 (extreme du jeu)",
+    "bias_alpha=1.0 (extreme du jeu)"
+   ],
+   "MPC_arima": [
+    "gamma=0.7 (extreme du jeu)",
+    "window=5 (extreme du jeu)",
+    "bias_alpha=1.0 (extreme du jeu)"
+   ]
+  },
+  "periodicd1": {
+   "PI_tuned": [
+    "filter_alpha=1.0 (extreme du jeu)"
+   ],
+   "FF_obs": [
+    "kp=0 (bord)",
+    "ki=0 (bord)",
+    "ff_alpha=1.0 (extreme du jeu)",
+    "filter_alpha=1.0 (extreme du jeu)",
+    "bias_alpha=1.0 (extreme du jeu)"
+   ],
+   "MPC_persist": [
+    "gamma=1.0 (extreme du jeu)",
+    "ewma_alpha=1.0 (extreme du jeu)",
+    "bias_alpha=1.0 (extreme du jeu)"
+   ],
+   "MPC_arima": [
+    "gamma=1.0 (extreme du jeu)",
+    "ewma_alpha=0.15 (extreme du jeu)",
+    "window=5 (extreme du jeu)",
+    "bias_alpha=1.0 (extreme du jeu)"
+   ]
+  }
+ },
+ "cells": {
+  "ramp": {
+   "scenario": {
+    "name": "ramp",
+    "tps0": 400.0,
+    "burst": true,
+    "burst_start": 100.0,
+    "burst_dur": 120.0,
+    "tps1": 1600.0,
+    "profile": "ramp"
+   },
+   "delay_ticks": 0
+  },
+  "periodic": {
+   "scenario": {
+    "name": "periodic",
+    "tps0": 400.0,
+    "burst": true,
+    "burst_start": 100.0,
+    "burst_dur": 120.0,
+    "tps1": 1600.0,
+    "profile": "periodic",
+    "period_s": 40.0
+   },
+   "delay_ticks": 0
+  },
+  "periodicd1": {
+   "scenario": {
+    "name": "periodic",
+    "tps0": 400.0,
+    "burst": true,
+    "burst_start": 100.0,
+    "burst_dur": 120.0,
+    "tps1": 1600.0,
+    "profile": "periodic",
+    "period_s": 40.0
+   },
+   "delay_ticks": 2
+  }
+ }
+}

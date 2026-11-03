@@ -36,6 +36,10 @@ def run_one(row, adapter, common: Common, out_dir):
     adapter.start(row, scn, common)
     rec = {k: [] for k in ("t", "flush", "sync", "bytes", "J", "tps")}
     J = common.j_init
+    # actuation delay (amendment 5): a management loop acts through an operator/API with latency. The command computed at tick k is
+    # applied delay_ticks ticks later; the controller is NOT told (it keeps its own commanded value), like a real operator.
+    delay = int(round(float(scn.get("act_delay_s", 0.0)) / common.dt))
+    in_flight = [common.j_init] * delay
     t0 = time.time()
     try:
         for k in range(n):
@@ -49,7 +53,12 @@ def run_one(row, adapter, common: Common, out_dir):
                 if key.startswith("x_"):
                     rec.setdefault(key, []).append(val)
             if tk >= common.warmup_s:
-                J = ctl.step(obs)
+                J_cmd = ctl.step(obs)
+                if delay:
+                    in_flight.append(J_cmd)
+                    J = in_flight.pop(0)
+                else:
+                    J = J_cmd
                 adapter.actuate(J)
             adapter.wait_next_tick(tk, common.dt)
     finally:

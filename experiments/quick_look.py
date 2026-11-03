@@ -9,16 +9,18 @@ from mpcrpo.metrics import run_metrics
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--raw", default="data/raw"); ap.add_argument("--controllers", nargs="+", default=["PI_fast", "PI_tuned", "FF_obs"])
-ap.add_argument("--min-rep", type=int, default=1)
+ap.add_argument("--min-rep", type=int, default=1); ap.add_argument("--scenario", default="burst")
 a = ap.parse_args()
 rows = {}
-for f in sorted(glob.glob(os.path.join(a.raw, "mongodb_burst_*.json"))):
+for f in sorted(glob.glob(os.path.join(a.raw, f"mongodb_{a.scenario}_*.json"))):
     if ".INVALID_" in f:
         continue
     j = json.load(open(f))
     if not (j.get("complete") and j.get("valid", True)):
         continue
     p = j["run_uid"].split("_"); ctl, rep = "_".join(p[2:-1]), int(p[-1][3:])
+    if p[1] != a.scenario:
+        continue
     if ctl not in a.controllers or rep < a.min_rep:
         continue
     rec = {k: np.asarray(j[k]) for k in ("t", "flush", "sync", "bytes", "J", "tps") if k in j}
