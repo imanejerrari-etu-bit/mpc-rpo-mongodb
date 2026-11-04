@@ -1,0 +1,63 @@
+{
+ "budget": 60,
+ "tune_seeds": [
+  1000,
+  1001,
+  1002
+ ],
+ "specs": {
+  "burst": {
+   "Threshold": {
+    "type": "threshold",
+    "hi": 1.4361848199107203,
+    "lo": 0.9277761977641322,
+    "down": 0.18445351085456332,
+    "up": 1.414899014487121,
+    "cooldown": 16
+   },
+   "FF_obs": {
+    "type": "pi",
+    "ff": true,
+    "kp": 0.0,
+    "ki": 0.0,
+    "antiwindup": "clamp",
+    "filter_alpha": 1.0,
+    "bias_alpha": 1.0,
+    "ff_alpha": 1.0
+   },
+   "Static": {
+    "type": "static"
+   }
+  },
+  "periodic": {
+   "Threshold": {
+    "type": "threshold",
+    "hi": 1.1783416797712907,
+    "lo": 0.8184632373125673,
+    "down": 0.5702834579805807,
+    "up": 1.1689161002682988,
+    "cooldown": 4
+   },
+   "FF_obs": {
+    "type": "pi",
+    "ff": true,
+    "kp": 0.0,
+    "ki": 0.0,
+    "antiwindup": "clamp",
+    "filter_alpha": 1.0,
+    "bias_alpha": 1.0,
+    "ff_alpha": 1.0
+   },
+   "Static": {
+    "type": "static"
+   }
+  }
+ },
+ "edge_flags": {
+  "burst": [
+   "down=0.184 (bord)",
+   "cooldown=16 (extreme du jeu)"
+  ],
+  "periodic": []
+ }
+}

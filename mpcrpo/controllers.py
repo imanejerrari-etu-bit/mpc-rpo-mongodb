@@ -172,9 +172,53 @@ class MPCController:
         return self.J_prev
 
 
+class StaticController:
+    """What most deployments do: the engine default J (j_init, 100 ms), never changed."""
+    name = "static"
+
+    def __init__(self, common: Common, J=None):
+        self.c, self.J = common, common.j_init if J is None else float(J)
+
+    def reset(self):
+        pass
+
+    def step(self, obs):
+        return self.J
+
+
+class ThresholdController:
+    """Rule-based (policy-based) manager, typical of operator scripts: on the windowed V seen by the operator, if V/V* > hi multiply J by `down`,
+    if V/V* < lo multiply J by `up`, otherwise hold; at most one action every `cooldown` ticks; J clamped to [j_min, j_max]."""
+    name = "threshold"
+
+    def __init__(self, common: Common, hi=1.2, lo=0.7, down=0.7, up=1.1, cooldown=4):
+        self.c, self.hi, self.lo, self.down, self.up, self.cool = common, float(hi), float(lo), float(down), float(up), int(cooldown)
+        self.reset()
+
+    def reset(self):
+        self.J_prev, self.since = self.c.j_init, 10 ** 6
+
+    def step(self, obs):
+        c = self.c
+        self.since += 1
+        if obs["V"] is None or self.since < self.cool:
+            return self.J_prev
+        r = obs["V"] / c.v_star_B
+        J = self.J_prev * self.down if r > self.hi else self.J_prev * self.up if r < self.lo else self.J_prev
+        J = float(np.clip(J, c.j_min, c.j_max))
+        if J != self.J_prev:
+            self.since = 0
+        self.J_prev = J
+        return J
+
+
 def build_controller(common: Common, spec: dict):
     s = dict(spec)
     kind = s.pop("type")
+    if kind == "static":
+        return StaticController(common, **s)
+    if kind == "threshold":
+        return ThresholdController(common, **s)
     if kind == "pi":
         return PIController(common, PIConfig(**s))
     if kind == "mpc":
