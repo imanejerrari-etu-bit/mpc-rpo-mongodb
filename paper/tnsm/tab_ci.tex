@@ -1,0 +1,9 @@
+\begin{table}[t]\centering\small
+\caption{Replication on a second platform (shared Linux runner, MongoDB in plain Docker), burst scenario, mean (sd) over 6 runs; last column: same controller on the main platform.}\label{tab:ci}
+\resizebox{\columnwidth}{!}{\begin{tabular}{lccccc}\toprule
+Controller & Error (\%) & Peak ($\times V^*$) & $|\Delta\ln J|$ & syncs/s & Main platform (\%)\\\midrule
+PI (tuned) & 9.36 (0.27) & 1.86 (0.11) & 0.044 & 8.54 & 9.55\\
+PI + feedforward & 1.52 (0.06) & 1.38 (0.06) & 0.046 & 8.70 & 1.25\\
+FF + observer & 1.45 (0.32) & 1.37 (0.03) & 0.022 & 8.63 & 1.82\\
+MPC, persistence & 1.33 (0.12) & 1.37 (0.03) & 0.019 & 8.63 & 1.69\\
+\bottomrule\end{tabular}}\end{table}

@@ -1,0 +1,13 @@
+\begin{table}[t]\centering\footnotesize
+\caption{Amendment 6. Top: confirmation on the periodic load, 12 new runs per controller. Bottom: operator baselines against a contemporaneous FF+obs, 8 runs per cell and controller. Static: $J=100$\,ms never changed; Threshold: rule-based manager. All eight contrasts against FF+obs: Holm $p_{\rm H}\le0.0036$.}\label{tab:amend6}
+\begin{tabular}{llccc}\toprule
+Block & Controller & Error (\%) & Peak & Syncs/s\\\midrule
+Confirm., & FF+obs & 2.26 (0.15) & 1.13 (0.02) & 8.63\\
+periodic & MPC ARIMA & 1.85 (0.28) & 1.13 (0.03) & 8.65\\\midrule
+Step & Static & 89.38 (1.72) & 2.24 (0.04) & 9.39\\
+ & Threshold & 18.28 (1.79) & 2.16 (0.05) & 8.51\\
+ & FF+obs & 1.76 (0.30) & 1.35 (0.03) & 8.62\\\midrule
+Periodic & Static & 50.89 (0.80) & 2.24 (0.12) & 9.39\\
+ & Threshold & 24.09 (1.13) & 2.05 (0.07) & 10.00\\
+ & FF+obs & 2.52 (0.33) & 1.20 (0.12) & 8.62\\
+\bottomrule\end{tabular}\end{table}

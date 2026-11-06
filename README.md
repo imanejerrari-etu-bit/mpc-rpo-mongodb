@@ -47,10 +47,11 @@ résultat dans `tuned_specs.json` (utilisé par `make_schedule.py --specs tuned_
 ## Régénérer le manuscrit (chiffres, tableaux, figures)
     python experiments\analyze_runs.py --raw data\raw --out analysis_P --max-rep 20
     python experiments\analyze_runs.py --raw data\raw --out analysis_S --max-rep 20 --exclude-stall-s 5
-    python experiments\analyze_runs.py --raw data\raw --out analysis_all
+    python experiments\analyze_runs.py --raw data\raw --out analysis_all --exclude-schedule schedule_pifast.csv schedule_scenarios.csv schedule_amend6.csv
     python paper\make_tables.py --primary analysis_P --sens analysis_S --all analysis_all --step2 step2_summary.json --step3b step3b_ticks.jsonl --specs tuned_specs.json --out paper
     python paper\make_figures.py --raw data\raw --step2 step2_summary.json --out paper\figures
     cd paper ; pdflatex main.tex ; pdflatex main.tex
+(les runs des amendements 4 a 6 sont exclus de analysis_all : ils ont leurs propres analyses, analyze_pifast.py, analyze_scenarios.py et analyze_amend6.py)
 (ne jamais éditer les chiffres à la main dans main.tex : ils viennent de numbers.tex et des tab_*.tex)
 
 ## Règles

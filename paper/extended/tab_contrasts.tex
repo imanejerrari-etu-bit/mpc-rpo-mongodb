@@ -1,0 +1,21 @@
+\begin{table*}[t]\centering\small
+\caption{Pre-specified contrasts (Mann--Whitney U, two-sided; Holm correction over the 14 tests = 7 contrasts $\times$ 2 primary criteria). Difference = mean(A) $-$ mean(B) with 95\% bootstrap CI; $\delta$ = Cliff's delta. ``All runs'' includes the stalled run; ``excl.'' removes it (post hoc sensitivity analysis).}\label{tab:contrasts}
+\resizebox{\textwidth}{!}{\begin{tabular}{llccccc}\toprule
+ & Contrast (A vs B) & Difference [95\% CI] (all runs) & $\delta$ & $p_{\text{Holm}}$ (all) & Difference [CI] (excl.) & $p_{\text{Holm}}$ (excl.)\\\midrule
+\multicolumn{7}{l}{\emph{Burst error (pp)}}\\
+ & PI vs PI-FF & +8.30 [+8.17, +8.44] & +1.00 & $4.4\!\times\!10^{-4}$ & +8.30 [+8.17, +8.44] & $4.4\!\times\!10^{-4}$\\
+ & PI-FF vs FF+obs & -11.17 [-32.44, -0.44] & -0.93 & $1.8\!\times\!10^{-4}$ & -0.57 [-0.74, -0.40] & $2.7\!\times\!10^{-4}$\\
+ & FF+obs vs MPC-pers. & +10.73 [-0.02, +32.03] & +0.35 & $0.605$ & +0.13 [-0.07, +0.32] & $0.951$\\
+ & PI-FF vs MPC-pers. & -0.44 [-0.61, -0.29] & -0.92 & $2.5\!\times\!10^{-4}$ & -0.44 [-0.61, -0.29] & $2.7\!\times\!10^{-4}$\\
+ & MPC-pers. vs MPC-MA & -1.12 [-1.42, -0.83] & -0.95 & $9.2\!\times\!10^{-4}$ & -1.12 [-1.42, -0.83] & $9.2\!\times\!10^{-4}$\\
+ & MPC-pers. vs MPC-ARIMA & -0.14 [-0.43, +0.17] & -0.15 & $1.000$ & -0.14 [-0.43, +0.17] & $1.000$\\
+ & PI vs MPC-pers. & +7.86 [+7.68, +8.03] & +1.00 & $4.4\!\times\!10^{-4}$ & +7.86 [+7.68, +8.03] & $4.4\!\times\!10^{-4}$\\
+\multicolumn{7}{l}{\emph{Peak ($\times V^*$)}}\\
+ & PI vs PI-FF & +0.52 [+0.45, +0.59] & +1.00 & $0.005$ & +0.52 [+0.45, +0.59] & $0.005$\\
+ & PI-FF vs FF+obs & -2.33 [-7.07, +0.05] & +0.10 & $1.000$ & +0.02 [-0.01, +0.06] & $1.000$\\
+ & FF+obs vs MPC-pers. & +2.34 [-0.05, +7.07] & +0.06 & $1.000$ & -0.02 [-0.06, +0.01] & $1.000$\\
+ & PI-FF vs MPC-pers. & +0.00 [-0.03, +0.03] & +0.09 & $1.000$ & +0.00 [-0.03, +0.03] & $1.000$\\
+ & MPC-pers. vs MPC-MA & -0.15 [-0.20, -0.09] & -0.81 & $0.005$ & -0.15 [-0.20, -0.09] & $0.005$\\
+ & MPC-pers. vs MPC-ARIMA & -0.04 [-0.13, +0.04] & -0.25 & $1.000$ & -0.04 [-0.13, +0.04] & $1.000$\\
+ & PI vs MPC-pers. & +0.52 [+0.46, +0.59] & +1.00 & $0.005$ & +0.52 [+0.46, +0.59] & $0.005$\\
+\bottomrule\end{tabular}}\end{table*}

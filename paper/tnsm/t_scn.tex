@@ -1,0 +1,17 @@
+\begin{table}[t]\centering\footnotesize
+\caption{Amendment 5: mean (sd) over 8 valid runs per cell and controller; each family re-tuned per cell. $p_{\rm H}$: Mann--Whitney $p$ against FF+obs on the error, Holm-corrected over the 18 declared tests.}\label{tab:scn}
+\begin{tabular}{llccc}\toprule
+Cell & Controller & Error (\%) & Peak & $p_{\rm H}$\\\midrule
+Ramp & PI & 4.93 (0.21) & 1.20 (0.10) & --\\
+ & FF+obs & 1.49 (0.73) & 1.13 (0.15) & --\\
+ & MPC pers. & 1.16 (0.10) & 1.07 (0.02) & 1\\
+ & MPC ARIMA & 1.20 (0.23) & 1.08 (0.02) & 1\\\midrule
+Periodic & PI & 10.06 (0.11) & 1.30 (0.04) & --\\
+ & FF+obs & 2.47 (0.36) & 1.15 (0.04) & --\\
+ & MPC pers. & 2.21 (0.22) & 1.13 (0.03) & 1\\
+ & MPC ARIMA & 1.95 (0.18) & 1.12 (0.04) & 0.084\\\midrule
+Periodic, & PI & 17.17 (0.17) & 1.67 (0.05) & --\\
+1\,s delay & FF+obs & 6.25 (0.16) & 1.31 (0.03) & --\\
+ & MPC pers. & 6.48 (1.05) & 1.35 (0.17) & 1\\
+ & MPC ARIMA & 5.64 (1.01) & 1.41 (0.27) & 0.17\\
+\bottomrule\end{tabular}\end{table}

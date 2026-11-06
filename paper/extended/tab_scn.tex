@@ -1,0 +1,17 @@
+\begin{table}[t]\centering\small
+\caption{Amendment 5: other disturbances and actuation delay, mean (sd) over 8 valid runs per cell and controller. Error = mean $|V/V^*-1|$ over the disturbance window (\%); peak in $\times V^*$. Each family was re-tuned for each cell. $p_{\rm H}$: Mann--Whitney $p$ of the controller against FF+obs after Holm correction over the 18 declared tests.}\label{tab:scn}
+\begin{tabular}{llcccc}\toprule
+Cell & Controller & Error (\%) & Peak & $p_{\rm H}$ (error) & Recovery (s)\\\midrule
+Ramp & PI & 4.93 (0.21) & 1.20 (0.10) & -- & 1.0\\
+ & FF+obs & 1.49 (0.73) & 1.13 (0.15) & -- & 4.3\\
+ & MPC persistence & 1.16 (0.10) & 1.07 (0.02) & 1 & 1.0\\
+ & MPC ARIMA & 1.20 (0.23) & 1.08 (0.02) & 1 & 1.0\\\midrule
+Periodic & PI & 10.06 (0.11) & 1.30 (0.04) & -- & 46.3\\
+ & FF+obs & 2.47 (0.36) & 1.15 (0.04) & -- & 1.0\\
+ & MPC persistence & 2.21 (0.22) & 1.13 (0.03) & 1 & 1.0\\
+ & MPC ARIMA & 1.95 (0.18) & 1.12 (0.04) & 0.084 & 1.0\\\midrule
+Periodic, 1\,s delay & PI & 17.17 (0.17) & 1.67 (0.05) & -- & 125.6\\
+ & FF+obs & 6.25 (0.16) & 1.31 (0.03) & -- & 1.0\\
+ & MPC persistence & 6.48 (1.05) & 1.35 (0.17) & 1 & 7.2\\
+ & MPC ARIMA & 5.64 (1.01) & 1.41 (0.27) & 0.17 & 7.0\\
+\bottomrule\end{tabular}\end{table}

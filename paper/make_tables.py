@@ -72,7 +72,7 @@ def main():
     L = ["\\begin{table*}[t]\\centering\\small",
          "\\caption{Burst scenario (400$\\to$1600 documents/s for 60 s): primary criteria and secondary measures, mean (sd) over $n$ valid runs "
          "(pilot included). The single run with a journal-sync stall $\\geq 5$\\,s (FF + observer) is excluded here; all contrasts are also "
-         "reported with it (Table~\\ref{tab:contrasts}). Peak = maximum exposure over 2\\,s windows relative to the target $V^*$.}\\label{tab:main}",
+         "reported with it (Table~\\ref{tab:contrasts}). Peak = maximum exposure over 4\\,s windows relative to the target $V^*$.}\\label{tab:main}",
          "\\resizebox{0.92\\textwidth}{!}{\\begin{tabular}{lrcccc}\\toprule", "Controller & $n$ & Burst error (\\%) & Peak ($\\times V^*$) & Steady error (\\%) & $|\\Delta\\ln J|$ per tick\\\\\\midrule"]
     for c in ORDER:
         n, mu, sd = stats(S, "burst", c, "mae_burst_pct"); _, pk, pks = stats(S, "burst", c, "peak_ratio")
@@ -115,11 +115,11 @@ def main():
     open(os.path.join(a.out, "tab_equiv.tex"), "w").write("\n".join(L) + "\n")
     # ---- low load / stationary table ---------------------------------------------------------------------------------
     L = ["\\begin{table}[t]\\centering\\small",
-         "\\caption{Stationary (400 documents/s) and low-load (100$\\to$400 documents/s, target unreachable at the start) scenarios, mean over $n$ runs.}\\label{tab:other}",
-         "\\resizebox{\\columnwidth}{!}{\\begin{tabular}{lcccc}\\toprule", "Controller & Stat. err. (\\%) & Low-load err. (\\%) & Recov. (s) & $n$\\\\\\midrule"]
+         "\\caption{Stationary (400 documents/s) and low-load (100$\\to$400 documents/s, target unreachable at the start) scenarios, mean over $n_{\\rm st}$ stationary runs and $n_{\\rm ll}$ low-load runs (stationary runs: pilot only, descriptive).}\\label{tab:other}",
+         "\\resizebox{\\columnwidth}{!}{\\begin{tabular}{lccccc}\\toprule", "Controller & Stat. err. (\\%) & Low-load err. (\\%) & Recov. (s) & $n_{\\rm st}$ & $n_{\\rm ll}$\\\\\\midrule"]
     for c in ORDER:
-        _, st, _ = stats(S, "stationary", c, "mae_pct"); n, lo, _ = stats(S, "lowload", c, "mae_pct"); _, rc, _ = stats(S, "lowload", c, "recovery_s")
-        L.append(f"{SHORTN[c]} & {f(st)} & {f(lo)} & {f(rc,1)} & {n}\\\\")
+        nst, st, _ = stats(S, "stationary", c, "mae_pct"); n, lo, _ = stats(S, "lowload", c, "mae_pct"); _, rc, _ = stats(S, "lowload", c, "recovery_s")
+        L.append(f"{SHORTN[c]} & {f(st)} & {f(lo)} & {f(rc,1)} & {nst} & {n}\\\\")
     L += ["\\bottomrule\\end{tabular}}\\end{table}"]
     open(os.path.join(a.out, "tab_other.tex"), "w").write("\n".join(L) + "\n")
     # ---- static plant table (step 2) ----------------------------------------------------------------------------------
@@ -175,9 +175,11 @@ def main():
          "\\resizebox{\\textwidth}{!}{\\begin{tabular}{lccccccccccc}\\toprule",
          "Controller & $K_p$ & $K_i$ & anti-windup & $\\alpha_V$ & feedforward & $\\alpha_{R}$ & bias $\\alpha_b$ & $H$ & $\\gamma$ & $\\lambda$ & $w$ (below target)\\\\\\midrule",
          "PI-default & 0.3 & 0.05 & clamp & 1 & no & -- & -- & -- & -- & -- & --\\\\"]
-    for key, nm in (("PI", "PI (tuned)"), ("PI_FF", "PI-FF"), ("FF_obs", "FF+obs")):
+    for key, nm in (("PI", "PI (tuned)"), ("PI_FF", "PI-FF"), ("PI_fast", "PI-fast"), ("FF_obs", "FF+obs")):
+        if key not in spec:
+            continue
         d = spec[key]
-        L.append(f"{nm} & {g(d,'kp','{:.2f}')} & {g(d,'ki','{:.2f}')} & {d.get('antiwindup','--')} & {g(d,'filter_alpha')} & {'yes' if d.get('ff') else 'no'} & {g(d,'ff_alpha')} & {g(d,'bias_alpha')} & -- & -- & -- & --\\\\")
+        L.append(f"{nm} & {g(d,'kp','{:.2f}')} & {g(d,'ki','{:.2f}')} & {d.get('antiwindup','--')} & {g(d,'filter_alpha')} & {'yes' if d.get('ff') else ('no (fast $\\hat V$)' if d.get('fast_v') else 'no')} & {g(d,'ff_alpha')} & {g(d,'bias_alpha')} & -- & -- & -- & --\\\\")
     for key, nm in (("MPC_persist", "MPC persistence"), ("MPC_ma", "MPC moving average"), ("MPC_arima", "MPC ARIMA(1,1,0)")):
         d = spec[key]
         L.append(f"{nm} & -- & -- & -- & -- & -- & {g(d,'ewma_alpha')} & {g(d,'bias_alpha')} & {d['horizon']} & {d['gamma']:g} & {d['lam']:.3f} & {d['under_weight']:.2f}\\\\")

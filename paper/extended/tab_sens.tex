@@ -1,0 +1,22 @@
+\begin{table}[t]\centering\small
+\caption{Sensitivity to controller parameters (burst scenario, $n=3$ per variant, one-at-a-time, descriptive). Ratios are relative to 3 concurrent nominal runs of the same controller. Nominal: PI \MaeSensPITnom\,\%, PI-FF \MaeSensPIFFnom\,\%, FF+obs \MaeSensFFOnom\,\%, MPC \MaeSensMPCPnom\,\%.}\label{tab:sens}
+\resizebox{\columnwidth}{!}{\begin{tabular}{llcccc}\toprule
+Controller & Variant & Error (\%) & Ratio & Peak ($\times V^*$) & $|\Delta\ln J|$\\\midrule
+PI & $K_i\times0.5$ & 14.79 & 1.58 & 1.82 & 0.041\\
+PI & $K_i\times1.5$ & 8.07 & 0.86 & 2.08 & 0.048\\
+PI & $K_p\times0.5$ & 11.35 & 1.21 & 2.16 & 0.024\\
+PI & $K_p\times1.5$ & 8.52 & 0.91 & 1.77 & 0.063\\
+PI-FF & $\alpha_R\times0.5$ & 2.44 & 2.16 & 1.47 & 0.048\\
+PI-FF & $K_i\times0.5$ & 2.98 & 2.63 & 1.32 & 0.057\\
+PI-FF & $K_i\times1.5$ & 1.33 & 1.18 & 1.42 & 0.059\\
+PI-FF & $K_p\times0.5$ & 1.47 & 1.30 & 1.33 & 0.043\\
+PI-FF & $K_p\times1.5$ & 4.76 & 4.20 & 7.45 & 0.094\\
+FF+obs & $\alpha_b\times0.5$ & 1.68 & 1.02 & 1.41 & 0.029\\
+FF+obs & $\alpha_R\times0.5$ & 3.18 & 1.93 & 1.54 & 0.016\\
+MPC-pers. & $\alpha_b\times0.5$ & 1.43 & 0.90 & 1.36 & 0.020\\
+MPC-pers. & $\alpha_R\times0.5$ & 3.70 & 2.32 & 1.61 & 0.023\\
+MPC-pers. & $\lambda\times0.5$ & 1.85 & 1.16 & 1.37 & 0.032\\
+MPC-pers. & $\lambda\times1.5$ & 1.49 & 0.93 & 1.33 & 0.023\\
+MPC-pers. & $w\times0.5$ & 1.51 & 0.95 & 1.33 & 0.026\\
+MPC-pers. & $w\times1.5$ & 1.47 & 0.92 & 1.42 & 0.023\\
+\bottomrule\end{tabular}}\end{table}

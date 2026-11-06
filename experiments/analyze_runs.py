@@ -67,6 +67,8 @@ def welch_tost(a, b, margin):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", nargs="+", required=True); ap.add_argument("--out", default="analysis")
+    ap.add_argument("--exclude-schedule", nargs="*", default=[],
+                    help="schedules of the later amendments (4 to 6): their runs are NOT part of the main-study / sensitivity analyses and are removed here")
     ap.add_argument("--max-rep", type=int, default=None,
                     help="keep only repetitions <= this (main analysis: 20, excludes the sensitivity-phase controls rep 21+)")
     ap.add_argument("--exclude-stall-s", type=float, default=None,
@@ -74,6 +76,10 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     runs = load(a.raw)
+    if a.exclude_schedule:
+        import csv as _csv
+        later = {row["run_uid"] for f in a.exclude_schedule for row in _csv.DictReader(open(f, newline="", encoding="utf-8"))}
+        runs = [r for r in runs if r["run_uid"] not in later]
     if a.max_rep is not None:
         runs = [r for r in runs if r["rep"] <= a.max_rep]
     dropped = []
